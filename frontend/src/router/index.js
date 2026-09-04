@@ -1,6 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+const SYS_NAME = '备品备件管理'
+
 // 使用 hash 模式，便于 jar 部署时不需要 history fallback 配置
 const routes = [
   { path: '/', redirect: '/orders' },
@@ -14,7 +16,7 @@ const routes = [
     path: '/products',
     name: 'Products',
     component: () => import('@/pages/Products.vue'),
-    meta: { title: '商品管理', icon: 'Goods' }
+    meta: { title: '货品管理', icon: 'Goods' }
   },
   {
     path: '/locations',
@@ -26,19 +28,35 @@ const routes = [
     path: '/orders',
     name: 'Orders',
     component: () => import('@/pages/Orders.vue'),
-    meta: { title: '上架单管理', icon: 'Tickets' }
+    meta: { title: '入库管理', icon: 'Tickets' }
   },
   {
     path: '/orders/:id',
     name: 'OrderDetail',
     component: () => import('@/pages/OrderDetail.vue'),
-    meta: { title: '上架单详情', hidden: true }
+    meta: { title: '入库单详情', hidden: true }
   },
   {
     path: '/putaway',
     name: 'Putaway',
     component: () => import('@/pages/Putaway.vue'),
     meta: { title: '上架作业', icon: 'Check', primary: true }
+  },
+  {
+    path: '/outbound',
+    name: 'Outbound',
+    component: () => import('@/pages/Outbound.vue'),
+    meta: { title: '出库管理', icon: 'Box' }
+  },
+  {
+    path: '/outbound/picking',
+    redirect: '/outbound/picking/list'
+  },
+  {
+    path: '/outbound/picking/:id',
+    name: 'Picking',
+    component: () => import('@/pages/Picking.vue'),
+    meta: { title: '拣货作业', hidden: true, primary: true }
   },
   {
     path: '/inventory',
@@ -63,21 +81,17 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
-  // 登录页直接放行
   if (to.meta.public) {
-    // 已登录则不再显示登录页
     if (authStore.isLoggedIn && to.path === '/login') {
       return next('/orders')
     }
     return next()
   }
 
-  // 未登录 → 跳转登录页
   if (!authStore.isLoggedIn) {
     return next({ path: '/login', query: { redirect: to.fullPath } })
   }
 
-  // 非管理员不能访问 adminOnly 路由
   if (to.meta.adminOnly && !authStore.isAdmin) {
     return next('/orders')
   }
@@ -89,7 +103,7 @@ router.beforeEach((to, from, next) => {
 router.afterEach((to) => {
   const title = to.meta?.title
   if (title) {
-    document.title = `${title} - 简易WMS管理系统`
+    document.title = `${title} - ${SYS_NAME}`
   }
 })
 

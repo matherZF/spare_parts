@@ -2,12 +2,12 @@
   <div class="page-container putaway-page">
     <!-- Step 1：选单 -->
     <template v-if="step === 1">
-      <PageHeader>选择待上架单</PageHeader>
+      <PageHeader>选择待入库单</PageHeader>
 
       <div v-loading="pendingLoading">
         <el-empty
           v-if="!pendingLoading && pendingList.length === 0"
-          description="暂无待上架单"
+          description="暂无待入库单"
         />
 
         <div v-for="order in pendingList" :key="order.id" @click="selectOrder(order)">
@@ -371,7 +371,7 @@ onMounted(async () => {
     try {
       const detail = await ordersApi.detail(orderId)
       if (detail.status === 'DONE') {
-        ElMessage.info('该上架单已完成，无需继续上架')
+        ElMessage.info('该入库单已完成，无需继续上架')
         loadPending()
       } else {
         selectOrder(detail)

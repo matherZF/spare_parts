@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <PageHeader>上架单管理</PageHeader>
+    <PageHeader>入库管理</PageHeader>
 
     <!-- 顶部快捷入口卡片 -->
     <el-row :gutter="16" style="margin-bottom: 20px">
@@ -9,8 +9,8 @@
           <div class="quick-card-body">
             <div class="quick-icon primary-bg"><el-icon :size="28"><Plus /></el-icon></div>
             <div class="quick-info">
-              <div class="quick-title">新建上架单</div>
-              <div class="quick-sub">快速创建一个新的上架单</div>
+              <div class="quick-title">新建入库单</div>
+              <div class="quick-sub">快速创建一个新的入库单</div>
             </div>
             <el-icon class="quick-arrow"><ArrowRight /></el-icon>
           </div>
@@ -63,7 +63,7 @@
         <el-icon><RefreshLeft /></el-icon>&nbsp;重置
       </el-button>
       <el-button type="success" @click="openCreateDialog">
-        <el-icon><Plus /></el-icon>&nbsp;新建上架单
+        <el-icon><Plus /></el-icon>&nbsp;新建入库单
       </el-button>
     </div>
 

@@ -137,7 +137,7 @@ function openDialog(row = null) {
 async function handleDelete(row) {
   try {
     await ElMessageBox.confirm(
-      `确定删除商品 ${row.name}（SKU: ${row.sku}）？若该商品已被上架单引用将无法删除。`,
+      `确定删除商品 ${row.name}（SKU: ${row.sku}）？若该商品已被入库单引用将无法删除。`,
       '删除确认',
       {
         type: 'warning',

@@ -3,7 +3,7 @@
     <!-- 顶部 Header -->
     <header class="mobile-header">
       <span class="mobile-title">
-        {{ $route.meta.title || 'WMS' }}
+        {{ $route.meta.title || '备品备件管理' }}
       </span>
       <!-- 右侧用户操作 -->
       <div class="header-actions">
@@ -47,20 +47,18 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-// Tab 顺序：上架单 / 商品 / 库位 / 上架作业（高亮）/ 库存
+// Tab 顺序：入库 / 上架作业（高亮）/ 出库 / 库存 / 货品
 const tabs = [
-  { path: '/orders', label: '上架单', icon: 'Tickets', primary: false },
-  { path: '/products', label: '商品', icon: 'Goods', primary: false },
-  { path: '/locations', label: '库位', icon: 'Location', primary: false },
-  { path: '/putaway', label: '上架作业', icon: 'Check', primary: true },
-  { path: '/inventory', label: '库存', icon: 'DataAnalysis', primary: false }
+  { path: '/orders', label: '入库', icon: 'Tickets', primary: false },
+  { path: '/putaway', label: '上架', icon: 'Check', primary: true },
+  { path: '/outbound', label: '出库', icon: 'Box', primary: true },
+  { path: '/inventory', label: '库存', icon: 'DataAnalysis', primary: false },
+  { path: '/products', label: '货品', icon: 'Goods', primary: false }
 ]
 
 function isActive(tab) {
-  // 详情页归属到上架单 tab
-  if (tab.path === '/orders' && route.path.startsWith('/orders/')) {
-    return true
-  }
+  if (tab.path === '/orders' && route.path.startsWith('/orders/')) return true
+  if (tab.path === '/outbound' && route.path.startsWith('/outbound/')) return true
   return route.path === tab.path
 }
 

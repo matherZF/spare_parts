@@ -39,6 +39,14 @@
           <el-option label="其他" value="其他" />
         </el-select>
       </el-form-item>
+      <el-form-item label="设备编号" prop="deviceNo">
+        <el-input
+          v-model="form.deviceNo"
+          placeholder="绑定的灯光提示设备编号（选填）"
+          maxlength="64"
+          clearable
+        />
+      </el-form-item>
       <el-form-item label="备注" prop="remark">
         <el-input
           v-model="form.remark"
@@ -86,6 +94,7 @@ const emptyForm = () => ({
   code: '',
   area: '',
   type: '',
+  deviceNo: '',
   remark: ''
 })
 const form = reactive(emptyForm())
@@ -105,6 +114,7 @@ watch(
         form.code = props.row.code || ''
         form.area = props.row.area || ''
         form.type = props.row.type || ''
+        form.deviceNo = props.row.deviceNo || ''
         form.remark = props.row.remark || ''
       }
     }
@@ -129,6 +139,7 @@ async function submit() {
       code: form.code.trim(),
       area: form.area?.trim() || null,
       type: form.type || null,
+      deviceNo: form.deviceNo?.trim() || null,
       remark: form.remark?.trim() || null
     }
     if (isEdit.value) {

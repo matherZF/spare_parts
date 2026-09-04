@@ -43,6 +43,7 @@ public class LocationService {
         if (!StringUtils.hasText(dto.code())) throw new BizException("code不能为空");
         if (locationRepo.existsByCode(dto.code())) throw new BizException("code已存在");
         Location l = new Location(dto.code(), dto.area(), dto.type(), dto.remark());
+        l.setDeviceNo(dto.deviceNo());
         locationRepo.save(l);
         return toDTO(l);
     }
@@ -52,6 +53,7 @@ public class LocationService {
         Location l = locationRepo.findById(id).orElseThrow(() -> new BizException("库位不存在"));
         l.setArea(dto.area() == null ? l.getArea() : dto.area());
         l.setType(dto.type() == null ? l.getType() : dto.type());
+        l.setDeviceNo(dto.deviceNo() == null ? l.getDeviceNo() : dto.deviceNo());
         l.setRemark(dto.remark() == null ? l.getRemark() : dto.remark());
         locationRepo.save(l);
         return toDTO(l);
@@ -67,6 +69,6 @@ public class LocationService {
     }
 
     private LocationDTO toDTO(Location l) {
-        return new LocationDTO(l.getId(), l.getCode(), l.getArea(), l.getType(), l.getRemark());
+        return new LocationDTO(l.getId(), l.getCode(), l.getArea(), l.getType(), l.getDeviceNo(), l.getRemark());
     }
 }

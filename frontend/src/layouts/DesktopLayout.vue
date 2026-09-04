@@ -4,7 +4,7 @@
     <el-aside width="220px" class="aside">
       <div class="logo">
         <el-icon class="logo-icon"><Box /></el-icon>
-        <span class="logo-text">简易 WMS</span>
+        <span class="logo-text">备品备件管理</span>
       </div>
       <el-menu
         :default-active="$route.path"
@@ -16,11 +16,11 @@
       >
         <el-menu-item index="/orders">
           <el-icon><Tickets /></el-icon>
-          <span>上架单管理</span>
+          <span>入库管理</span>
         </el-menu-item>
         <el-menu-item index="/products">
           <el-icon><Goods /></el-icon>
-          <span>商品管理</span>
+          <span>货品管理</span>
         </el-menu-item>
         <el-menu-item index="/locations">
           <el-icon><Location /></el-icon>
@@ -29,6 +29,10 @@
         <el-menu-item index="/putaway" class="menu-primary">
           <el-icon><Check /></el-icon>
           <span>上架作业</span>
+        </el-menu-item>
+        <el-menu-item index="/outbound">
+          <el-icon><Box /></el-icon>
+          <span>出库管理</span>
         </el-menu-item>
         <el-menu-item index="/inventory">
           <el-icon><DataAnalysis /></el-icon>
@@ -46,7 +50,7 @@
       <!-- 顶部 Header -->
       <el-header height="60px" class="header">
         <div class="header-left">
-          <span class="sys-title">简易WMS管理系统</span>
+          <span class="sys-title">备品备件管理系统</span>
         </div>
         <div class="header-right">
           <el-breadcrumb separator="/">

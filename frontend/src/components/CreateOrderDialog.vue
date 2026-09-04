@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="新建上架单"
+    title="新建入库单"
     width="520px"
     @closed="onClosed"
     destroy-on-close
@@ -138,7 +138,7 @@ async function submit() {
       productId: form.productId,
       planQty: form.planQty
     })
-    ElMessage.success(`创建上架单成功：${res.orderNo}`)
+    ElMessage.success(`创建入库单成功：${res.orderNo}`)
     visible.value = false
     emit('success', res)
   } finally {

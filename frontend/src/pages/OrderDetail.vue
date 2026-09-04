@@ -7,7 +7,7 @@
       style="margin-bottom: 12px"
     >
       <template #content>
-        <span style="font-size: 18px; font-weight: 600">上架单详情</span>
+        <span style="font-size: 18px; font-weight: 600">入库单详情</span>
       </template>
     </el-page-header>
 

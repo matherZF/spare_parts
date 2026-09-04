@@ -3,7 +3,7 @@
     <div class="login-card">
       <div class="login-header">
         <el-icon class="logo-icon"><Box /></el-icon>
-        <h1 class="login-title">简易 WMS 管理系统</h1>
+        <h1 class="login-title">备品备件管理系统</h1>
         <p class="login-subtitle">请登录后继续操作</p>
       </div>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large" @submit.prevent="handleLogin">

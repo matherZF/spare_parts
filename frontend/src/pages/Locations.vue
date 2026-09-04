@@ -47,6 +47,14 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
+      <el-table-column label="灯光设备" min-width="120">
+        <template #default="{ row }">
+          <el-tag v-if="row.deviceNo" size="small" type="warning" effect="plain">
+            {{ row.deviceNo }}
+          </el-tag>
+          <span v-else style="color:#c0c4cc">未绑定</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
