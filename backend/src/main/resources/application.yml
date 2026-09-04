@@ -26,3 +26,7 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     serialization:
       write-dates-as-timestamps: false
+
+jwt:
+  secret: WmsSecretKey2024ForJwtTokenGenerationAndValidationMinimum256Bits!!
+  expiration: 86400000  # 24小时毫秒

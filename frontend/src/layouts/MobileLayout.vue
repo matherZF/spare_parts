@@ -5,6 +5,11 @@
       <span class="mobile-title">
         {{ $route.meta.title || 'WMS' }}
       </span>
+      <!-- 右侧用户操作 -->
+      <div class="header-actions">
+        <el-icon v-if="authStore.isAdmin" class="action-icon" @click="goUsers"><UserFilled /></el-icon>
+        <el-icon class="action-icon" @click="handleLogout"><SwitchButton /></el-icon>
+      </div>
     </header>
 
     <!-- 主内容 -->
@@ -35,9 +40,12 @@
 
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 // Tab 顺序：上架单 / 商品 / 库位 / 上架作业（高亮）/ 库存
 const tabs = [
@@ -61,6 +69,20 @@ function goTab(path) {
     router.push(path)
   }
 }
+
+function goUsers() {
+  router.push('/users')
+}
+
+function handleLogout() {
+  ElMessageBox.confirm('确定退出登录吗？', '退出确认', { type: 'warning' })
+    .then(() => {
+      authStore.logout()
+      ElMessage.success('已退出登录')
+      router.push('/login')
+    })
+    .catch(() => {})
+}
 </script>
 
 <style scoped lang="scss">
@@ -76,16 +98,35 @@ function goTab(path) {
   color: #fff;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 0 16px;
   font-size: 16px;
   font-weight: 600;
   position: sticky;
   top: 0;
   z-index: 10;
 }
+.mobile-title {
+  flex: 1;
+  text-align: center;
+}
+.header-actions {
+  display: flex;
+  gap: 16px;
+  min-width: 48px;
+  justify-content: flex-end;
+}
+.action-icon {
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.9;
+  &:active {
+    opacity: 1;
+  }
+}
 .mobile-main {
   flex: 1;
-  padding-bottom: 72px; // 给底部 nav 留空间
+  padding-bottom: 72px;
   min-height: calc(100vh - 52px - 56px);
   overflow-y: auto;
 }

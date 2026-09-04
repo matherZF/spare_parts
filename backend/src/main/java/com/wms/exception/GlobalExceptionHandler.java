@@ -6,6 +6,8 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,6 +51,18 @@ public class GlobalExceptionHandler {
             msg = "唯一约束冲突：记录已存在或字段重复";
         }
         return Result.fail(msg);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> handleAccessDenied(AccessDeniedException e) {
+        return Result.fail("无权限访问");
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> handleAuth(AuthenticationException e) {
+        return Result.fail("未登录或登录已过期");
     }
 
     @ExceptionHandler(Exception.class)

@@ -4,6 +4,7 @@ import com.wms.entity.*;
 import com.wms.repository.*;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,20 +16,36 @@ public class DataInitializer implements ApplicationRunner {
     private final LocationRepository locationRepo;
     private final PutawayOrderRepository orderRepo;
     private final InventoryRepository inventoryRepo;
+    private final UserRepository userRepo;
+    private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(ProductRepository productRepo,
                            LocationRepository locationRepo,
                            PutawayOrderRepository orderRepo,
-                           InventoryRepository inventoryRepo) {
+                           InventoryRepository inventoryRepo,
+                           UserRepository userRepo,
+                           PasswordEncoder passwordEncoder) {
         this.productRepo = productRepo;
         this.locationRepo = locationRepo;
         this.orderRepo = orderRepo;
         this.inventoryRepo = inventoryRepo;
+        this.userRepo = userRepo;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        if (userRepo.count() == 0) {
+            User admin = new User("admin", passwordEncoder.encode("admin123"), "管理员", UserRole.ADMIN);
+            admin.setEnabled(true);
+            userRepo.save(admin);
+
+            User operator = new User("operator", passwordEncoder.encode("operator123"), "作业员", UserRole.OPERATOR);
+            operator.setEnabled(true);
+            userRepo.save(operator);
+        }
+
         if (productRepo.count() != 0) return;
 
         Product p1 = productRepo.save(new Product("SP-001", "深沟球轴承", "6205-ZZ", "套"));

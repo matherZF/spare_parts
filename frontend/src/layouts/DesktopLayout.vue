@@ -34,6 +34,11 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>库存查询</span>
         </el-menu-item>
+        <!-- 仅管理员可见 -->
+        <el-menu-item v-if="authStore.isAdmin" index="/users">
+          <el-icon><UserFilled /></el-icon>
+          <span>用户管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -50,6 +55,23 @@
               {{ $route.meta.title }}
             </el-breadcrumb-item>
           </el-breadcrumb>
+          <!-- 用户下拉菜单 -->
+          <el-dropdown trigger="click" @command="handleCommand">
+            <span class="user-info">
+              <el-icon><UserFilled /></el-icon>
+              <span class="user-name">{{ authStore.displayName }}</span>
+              <el-tag size="small" :type="authStore.isAdmin ? 'danger' : 'info'" effect="plain">
+                {{ authStore.isAdmin ? '管理员' : '作业员' }}
+              </el-tag>
+              <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="users" v-if="authStore.isAdmin">用户管理</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </el-header>
 
@@ -62,7 +84,26 @@
 </template>
 
 <script setup>
-// 桌面端布局：左侧侧边栏 + 顶部 Header + 内容区
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+function handleCommand(cmd) {
+  if (cmd === 'logout') {
+    ElMessageBox.confirm('确定退出登录吗？', '退出确认', { type: 'warning' })
+      .then(() => {
+        authStore.logout()
+        ElMessage.success('已退出登录')
+        router.push('/login')
+      })
+      .catch(() => {})
+  } else if (cmd === 'users') {
+    router.push('/users')
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -114,8 +155,22 @@
   color: #303133;
 }
 .header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
   color: #606266;
   font-size: 13px;
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #303133;
+  .user-name {
+    font-size: 14px;
+    font-weight: 500;
+  }
 }
 .main {
   background: #f0f2f5;
