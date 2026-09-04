@@ -124,7 +124,8 @@
     <el-dialog
       v-model="createDialogVisible"
       title="新建领用单"
-      width="640px"
+      :width="dialogWidth"
+      :top="isMobile ? '5vh' : '15vh'"
       @closed="onCreateClosed"
       destroy-on-close
     >
@@ -140,12 +141,13 @@
           v-for="(item, idx) in createForm.items"
           :key="idx"
           class="item-row"
+          :class="{ 'item-row-mobile': isMobile }"
         >
           <el-select
             v-model="item.productId"
             filterable
             placeholder="搜索或选择货品"
-            style="flex: 1"
+            class="item-select"
             :loading="productsLoading"
           >
             <el-option
@@ -160,22 +162,24 @@
               </span>
             </el-option>
           </el-select>
-          <el-input-number
-            v-model="item.requestedQty"
-            :min="1"
-            :max="Math.max(1, getStock(item.productId))"
-            controls-position="right"
-            style="width: 160px; margin-left: 12px"
-          />
-          <el-button
-            type="danger"
-            link
-            style="margin-left: 8px"
-            :disabled="createForm.items.length <= 1"
-            @click="removeItem(idx)"
-          >
-            <el-icon><Delete /></el-icon>
-          </el-button>
+          <div class="item-qty-wrap">
+            <el-input-number
+              v-model="item.requestedQty"
+              :min="1"
+              :max="Math.max(1, getStock(item.productId))"
+              controls-position="right"
+              class="item-qty"
+            />
+            <el-button
+              type="danger"
+              link
+              class="item-del"
+              :disabled="createForm.items.length <= 1"
+              @click="removeItem(idx)"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
         </div>
         <div class="stock-hint" v-if="createForm.items.some(i => i.productId)">
           <el-icon><InfoFilled /></el-icon>
@@ -251,15 +255,18 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import * as outboundApi from '@/api/outbound'
 import * as productsApi from '@/api/products'
 import * as inventoryApi from '@/api/inventory'
+import { useMobile } from '@/composables/useMobile'
 
 const router = useRouter()
+const { isMobile } = useMobile()
+const dialogWidth = computed(() => (isMobile.value ? '92%' : '640px'))
 
 const filters = reactive({ status: '', keyword: '' })
 const page = reactive({ page: 1, size: 20 })
@@ -512,6 +519,41 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   margin-bottom: 12px;
+  .item-select {
+    flex: 1;
+  }
+  .item-qty-wrap {
+    display: flex;
+    align-items: center;
+    margin-left: 12px;
+  }
+  .item-qty {
+    width: 160px;
+  }
+  .item-del {
+    margin-left: 8px;
+  }
+}
+/* 移动端：货品行垂直排列，选择器和数量各占一行 */
+.item-row-mobile {
+  flex-direction: column;
+  align-items: stretch;
+  .item-select {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .item-qty-wrap {
+    margin-left: 0;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .item-qty {
+    flex: 1;
+    width: auto;
+  }
+  .item-del {
+    margin-left: 12px;
+  }
 }
 .stock-tag {
   float: right;
@@ -529,6 +571,16 @@ onMounted(loadData)
   color: #909399;
   margin-top: -4px;
   margin-bottom: 8px;
+}
+/* 移动端弹窗底部按钮占满 */
+@media (max-width: 768px) {
+  :deep(.el-dialog__footer .el-dialog__btns) {
+    display: flex;
+    gap: 12px;
+    .el-button {
+      flex: 1;
+    }
+  }
 }
 .detail-top {
   display: flex;

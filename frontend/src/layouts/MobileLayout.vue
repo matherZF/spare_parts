@@ -47,13 +47,10 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-// Tab 顺序：入库 / 上架作业（高亮）/ 出库 / 库存 / 货品
+// Tab 顺序：入库 / 出库
 const tabs = [
-  { path: '/orders', label: '入库', icon: 'Tickets', primary: false },
-  { path: '/putaway', label: '上架', icon: 'Check', primary: true },
-  { path: '/outbound', label: '出库', icon: 'Box', primary: true },
-  { path: '/inventory', label: '库存', icon: 'DataAnalysis', primary: false },
-  { path: '/products', label: '货品', icon: 'Goods', primary: false }
+  { path: '/orders', label: '入库', icon: 'Tickets', primary: true },
+  { path: '/outbound', label: '出库', icon: 'Box', primary: true }
 ]
 
 function isActive(tab) {
@@ -137,7 +134,7 @@ function handleLogout() {
   background: #fff;
   border-top: 1px solid #e4e7ed;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   text-align: center;
   z-index: 100;
 }

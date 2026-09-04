@@ -2,7 +2,8 @@
   <el-dialog
     v-model="visible"
     title="新建入库单"
-    width="520px"
+    :width="dialogWidth"
+    :top="isMobile ? '5vh' : '15vh'"
     @closed="onClosed"
     destroy-on-close
   >
@@ -10,7 +11,8 @@
       ref="formRef"
       :model="form"
       :rules="rules"
-      label-width="100px"
+      :label-width="isMobile ? 'auto' : '100px'"
+      :label-position="isMobile ? 'top' : 'right'"
       @submit.prevent
     >
       <el-form-item label="选择商品" prop="productId">
@@ -66,6 +68,11 @@ import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as ordersApi from '@/api/orders'
 import * as productsApi from '@/api/products'
+import { useMobile } from '@/composables/useMobile'
+
+const { isMobile } = useMobile()
+
+const dialogWidth = computed(() => (isMobile.value ? '92%' : '520px'))
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false }
@@ -146,3 +153,21 @@ async function submit() {
   }
 }
 </script>
+
+<style scoped lang="scss">
+:deep(.el-dialog__body) {
+  padding-top: 16px;
+}
+/* 移动端：弹窗按钮占满宽度，方便触摸 */
+@media (max-width: 768px) {
+  :deep(.el-dialog__footer) {
+    .el-button {
+      flex: 1;
+    }
+  }
+  :deep(.el-dialog__footer .el-dialog__btns) {
+    display: flex;
+    gap: 12px;
+  }
+}
+</style>
