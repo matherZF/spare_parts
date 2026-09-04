@@ -1,6 +1,7 @@
 package com.wms.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
@@ -25,6 +26,7 @@ public class Product {
     @Column(length = 32)
     private String unit;
 
+    @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
 
@@ -34,11 +36,6 @@ public class Product {
         this.name = name;
         this.spec = spec;
         this.unit = unit;
-    }
-
-    @PrePersist
-    void prePersist() {
-        this.createdAt = Instant.now();
     }
 
     public Long getId() { return id; }

@@ -1,6 +1,7 @@
 package com.wms.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public class PutawayOrder {
     @Column(nullable = false, length = 16)
     private PutawayStatus status;
 
+    @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
 
@@ -39,11 +41,6 @@ public class PutawayOrder {
     private List<PutawayItem> items = new ArrayList<>();
 
     public PutawayOrder() {}
-
-    @PrePersist
-    void prePersist() {
-        this.createdAt = Instant.now();
-    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

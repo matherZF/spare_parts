@@ -1,6 +1,7 @@
 package com.wms.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -24,6 +25,7 @@ public class Inventory {
     @Column(nullable = false)
     private int qty;
 
+    @UpdateTimestamp
     private Instant updatedAt;
 
     public Inventory() {}
@@ -32,12 +34,6 @@ public class Inventory {
         this.location = location;
         this.qty = qty;
         this.updatedAt = updatedAt;
-    }
-
-    @PrePersist
-    @PreUpdate
-    void preUpsert() {
-        this.updatedAt = Instant.now();
     }
 
     public Long getId() { return id; }
