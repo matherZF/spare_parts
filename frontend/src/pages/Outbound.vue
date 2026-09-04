@@ -153,12 +153,17 @@
               :key="p.id"
               :label="`${p.sku} - ${p.name}`"
               :value="p.id"
-            />
+            >
+              <span>{{ p.sku }} - {{ p.name }}</span>
+              <span class="stock-tag" :class="{ 'stock-zero': getStock(p.id) <= 0 }">
+                库存 {{ getStock(p.id) }}
+              </span>
+            </el-option>
           </el-select>
           <el-input-number
             v-model="item.requestedQty"
             :min="1"
-            :max="99999"
+            :max="Math.max(1, getStock(item.productId))"
             controls-position="right"
             style="width: 160px; margin-left: 12px"
           />
@@ -171,6 +176,10 @@
           >
             <el-icon><Delete /></el-icon>
           </el-button>
+        </div>
+        <div class="stock-hint" v-if="createForm.items.some(i => i.productId)">
+          <el-icon><InfoFilled /></el-icon>
+          <span>数量不能超过当前可用库存</span>
         </div>
 
         <el-empty
@@ -248,6 +257,7 @@ import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import * as outboundApi from '@/api/outbound'
 import * as productsApi from '@/api/products'
+import * as inventoryApi from '@/api/inventory'
 
 const router = useRouter()
 
@@ -261,6 +271,7 @@ const createDialogVisible = ref(false)
 const submitting = ref(false)
 const productsLoading = ref(false)
 const productList = ref([])
+const stockMap = ref({}) // productId -> totalQty
 
 const createForm = reactive({ items: [{ productId: null, requestedQty: 1 }] })
 
@@ -320,14 +331,31 @@ function onCreateClosed() {
 }
 
 async function loadProducts() {
-  if (productList.value.length > 0) return
-  productsLoading.value = true
-  try {
-    const r = await productsApi.list({ page: 0, size: 500 })
-    productList.value = r.content || []
-  } finally {
-    productsLoading.value = false
+  if (productList.value.length === 0) {
+    productsLoading.value = true
+    try {
+      const r = await productsApi.list({ page: 0, size: 500 })
+      productList.value = r.content || []
+    } finally {
+      productsLoading.value = false
+    }
   }
+  // 每次打开都刷新库存汇总
+  try {
+    const stocks = await inventoryApi.summary()
+    const map = {}
+    for (const s of stocks || []) {
+      map[s.productId] = s.totalQty || 0
+    }
+    stockMap.value = map
+  } catch {
+    stockMap.value = {}
+  }
+}
+
+function getStock(productId) {
+  if (!productId) return 0
+  return stockMap.value[productId] || 0
 }
 
 function addItem() {
@@ -351,6 +379,15 @@ async function submitCreate() {
     }
     if (!items[i].requestedQty || items[i].requestedQty <= 0) {
       ElMessage.warning(`第 ${i + 1} 行数量必须大于 0`)
+      return
+    }
+    const avail = getStock(items[i].productId)
+    if (avail <= 0) {
+      ElMessage.warning(`第 ${i + 1} 行货品无可用库存`)
+      return
+    }
+    if (items[i].requestedQty > avail) {
+      ElMessage.warning(`第 ${i + 1} 行数量超过可用库存（${avail}）`)
       return
     }
   }
@@ -475,6 +512,23 @@ onMounted(loadData)
   display: flex;
   align-items: center;
   margin-bottom: 12px;
+}
+.stock-tag {
+  float: right;
+  color: #67C23A;
+  font-size: 12px;
+  &.stock-zero {
+    color: #F56C6C;
+  }
+}
+.stock-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #909399;
+  margin-top: -4px;
+  margin-bottom: 8px;
 }
 .detail-top {
   display: flex;

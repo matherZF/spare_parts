@@ -238,13 +238,23 @@ async function handleStart() {
     const res = await outboundApi.startPicking(orderId.value)
     ElMessage.success('已开始拣货，库位灯光已点亮')
     // 使用返回结果刷新明细（含库位分配）
+    // startPicking 返回项用 itemId，统一映射为 id 以保持与 detail 接口一致
     if (res && res.items) {
       detail.value = {
         ...detail.value,
         status: 'PICKING',
         items: res.items.map((it) => ({
-          ...it,
-          pickedQty: 0
+          id: it.itemId,
+          productId: it.productId,
+          sku: it.sku,
+          name: it.name,
+          requestedQty: it.requestedQty,
+          pickedQty: 0,
+          locationId: it.locationId,
+          locationCode: it.locationCode,
+          locationArea: it.locationArea,
+          deviceNo: it.deviceNo,
+          availableQty: it.availableQty
         }))
       }
     } else {
