@@ -27,7 +27,7 @@ public interface PutawayOrderRepository extends JpaRepository<PutawayOrder, Long
     @Query("select distinct o from PutawayOrder o left join fetch o.product where o.status = :status")
     List<PutawayOrder> findByStatusWithProduct(@Param("status") PutawayStatus status);
 
-    @EntityGraph(attributePaths = {"product", "items", "items.location"})
+    @EntityGraph(attributePaths = {"product", "items", "items.location", "batch"})
     @Query("select o from PutawayOrder o where o.id = :id")
     Optional<PutawayOrder> findDetailById(@Param("id") Long id);
 }

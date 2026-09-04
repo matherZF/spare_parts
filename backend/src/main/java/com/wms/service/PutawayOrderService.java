@@ -103,6 +103,7 @@ public class PutawayOrderService {
         return orderRepo.findByStatusAndKeyword(s, kw, pageable).map(this::toListItem);
     }
 
+    @Transactional(readOnly = true)
     public PutawayOrderDetailVO detail(Long id) {
         return orderRepo.findDetailById(id).map(this::toDetail)
                 .orElseThrow(() -> new BizException("上架单不存在"));
