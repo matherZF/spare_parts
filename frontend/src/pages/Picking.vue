@@ -215,7 +215,9 @@ async function loadPending() {
 }
 
 function selectOrder(order) {
-  router.push(`/outbound/picking/${order.id}`)
+  if (order && order.id != null) {
+    router.push(`/outbound/picking/${order.id}`)
+  }
 }
 
 function backToList() {

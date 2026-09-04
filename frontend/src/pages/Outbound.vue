@@ -17,7 +17,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="8" style="margin-bottom: 12px">
-        <el-card class="quick-card" shadow="hover" @click="goPicking">
+        <el-card class="quick-card" shadow="hover" @click="goPicking()">
           <div class="quick-card-body">
             <div class="quick-icon success-bg"><el-icon :size="28"><Box /></el-icon></div>
             <div class="quick-info">
@@ -421,7 +421,7 @@ async function submitCreate() {
 }
 
 function goPicking(row) {
-  if (row) {
+  if (row && row.id != null) {
     router.push(`/outbound/picking/${row.id}`)
   } else {
     router.push('/outbound/picking/list')
