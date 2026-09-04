@@ -1,7 +1,9 @@
 package com.wms.controller;
 
 import com.wms.common.Result;
+import com.wms.dto.AvailableStockVO;
 import com.wms.dto.OutboundCreateReq;
+import com.wms.dto.OutboundItemVO;
 import com.wms.dto.OutboundOrderDetailVO;
 import com.wms.dto.OutboundOrderListItemVO;
 import com.wms.service.OutboundService;
@@ -42,6 +44,22 @@ public class OutboundController {
     @PostMapping
     public Result<OutboundOrderDetailVO> create(@Valid @RequestBody OutboundCreateReq req) {
         return Result.ok(outboundService.create(req));
+    }
+
+    /** 查询某商品的可用库存（含批次详情），用于人工选择库位/批次 */
+    @GetMapping("/available-stock")
+    public Result<List<AvailableStockVO>> availableStock(@RequestParam Long productId) {
+        return Result.ok(outboundService.listAvailableInventory(productId));
+    }
+
+    /** 人工为出库项分配库位+批次 */
+    @PostMapping("/{orderId}/items/{itemId}/assign")
+    public Result<OutboundItemVO> assignLocation(
+            @PathVariable Long orderId,
+            @PathVariable Long itemId,
+            @RequestParam Long locationId,
+            @RequestParam(required = false) Long batchId) {
+        return Result.ok(outboundService.assignLocation(orderId, itemId, locationId, batchId));
     }
 
     /** 开始拣货：分配库位 + 触发灯光设备 */

@@ -65,23 +65,35 @@ public class PutawayService {
         orderRepo.save(order);
 
         Product product = order.getProduct();
-        Inventory inv = inventoryRepo.findByProductIdAndLocationId(product.getId(), loc.getId()).orElse(null);
+        Batch batch = order.getBatch();
+        Long batchId = batch != null ? batch.getId() : null;
+        // 按 商品+库位+批次 定位库存记录
+        Inventory inv;
+        if (batchId != null) {
+            inv = inventoryRepo.findByProductIdAndLocationIdAndBatchId(product.getId(), loc.getId(), batchId).orElse(null);
+        } else {
+            inv = inventoryRepo.findByProductIdAndLocationId(product.getId(), loc.getId()).orElse(null);
+        }
         int beforeQty = inv == null ? 0 : inv.getQty();
         int afterQty = beforeQty + qty;
         if (inv == null) {
-            inv = new Inventory(product, loc, qty, Instant.now());
+            inv = new Inventory(product, loc, batch, qty, Instant.now());
         } else {
             inv.setQty(afterQty);
         }
         inventoryRepo.save(inv);
 
-        // 记录入库日志
+        // 记录入库日志（含批次信息）
         inventoryLogService.record(
                 product.getId(), product.getSku(), product.getName(),
                 loc.getId(), loc.getCode(),
                 "INBOUND", qty, beforeQty, afterQty,
                 "PUTAWAY", order.getOrderNo(),
-                currentOperator(), null
+                currentOperator(), null,
+                batch != null ? batch.getItemKey() : null,
+                batch != null ? batch.getProductionDate() : null,
+                batch != null ? batch.getShelfLifeDays() : null,
+                batch != null ? batch.getManufacturer() : null
         );
 
         boolean done = order.getStatus() == PutawayStatus.DONE;

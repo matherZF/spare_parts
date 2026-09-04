@@ -24,7 +24,7 @@ public interface OutboundOrderRepository extends JpaRepository<OutboundOrder, Lo
     @Query("select o from OutboundOrder o where o.status = :status order by o.id desc")
     List<OutboundOrder> findPendingList(@Param("status") OutboundStatus status);
 
-    @EntityGraph(attributePaths = {"items", "items.product", "items.location"})
+    @EntityGraph(attributePaths = {"items", "items.product", "items.location", "items.batch"})
     @Query("select o from OutboundOrder o where o.id = :id")
     Optional<OutboundOrder> findDetailById(@Param("id") Long id);
 }

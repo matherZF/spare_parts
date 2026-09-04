@@ -69,7 +69,7 @@
               style="margin-top: 16px"
             >
               <template #title>
-                领用单已创建，点击下方「开始拣货」按钮，系统将为每项货品分配库位并点亮对应灯光设备。
+                可点击「开始拣货」由系统按 FIFO 自动分配库位，也可逐项「选择库位」人工指定批次。
               </template>
             </el-alert>
 
@@ -85,10 +85,23 @@
                     <span style="margin-left:6px">{{ row.name }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="requestedQty" label="需求数量" width="120" align="center" />
-                <el-table-column label="库位" min-width="140">
-                  <template #default>
-                    <span style="color:#c0c4cc">开始拣货后分配</span>
+                <el-table-column prop="requestedQty" label="需求数量" width="110" align="center" />
+                <el-table-column label="已选库位/批次" min-width="200">
+                  <template #default="{ row }">
+                    <template v-if="row.locationCode">
+                      <div><b>{{ row.locationCode }}</b></div>
+                      <div style="font-size:12px;color:#909399" v-if="row.itemKey">
+                        批次：{{ row.itemKey }}
+                      </div>
+                    </template>
+                    <span v-else style="color:#c0c4cc">未分配</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="120" align="center">
+                  <template #default="{ row }">
+                    <el-button type="primary" size="small" link @click="openSelectDialog(row)">
+                      选择库位
+                    </el-button>
                   </template>
                 </el-table-column>
               </el-table>
@@ -143,6 +156,21 @@
                   <div class="pick-qty">
                     取货数量：<b class="qty-num">{{ item.requestedQty }}</b> 件
                   </div>
+                  <!-- 批次信息 -->
+                  <div class="pick-batch" v-if="item.itemKey">
+                    <el-icon><Box /></el-icon>
+                    <span class="batch-label">批次：</span>
+                    <b>{{ item.itemKey }}</b>
+                    <span v-if="item.productionDate" class="batch-meta">
+                      生产 {{ item.productionDate }}
+                    </span>
+                    <span v-if="item.expiryDate" class="batch-meta">
+                      到期 {{ item.expiryDate }}
+                    </span>
+                    <span v-if="item.manufacturer" class="batch-meta">
+                      {{ item.manufacturer }}
+                    </span>
+                  </div>
                   <div class="pick-device" v-if="item.deviceNo">
                     <el-icon><MagicStick /></el-icon>
                     <span>灯光设备：{{ item.deviceNo }}（已点亮）</span>
@@ -150,6 +178,11 @@
                   <div class="pick-device" v-else>
                     <el-icon><InfoFilled /></el-icon>
                     <span style="color:#909399">该库位未绑定灯光设备</span>
+                  </div>
+                  <div style="margin-top: 8px">
+                    <el-button size="small" type="primary" link @click="openSelectDialog(item)">
+                      更换库位
+                    </el-button>
                   </div>
                 </div>
               </div>
@@ -179,6 +212,92 @@
         </template>
       </div>
     </template>
+
+    <!-- 人工选择库位 Dialog -->
+    <el-dialog
+      v-model="selectDialogVisible"
+      title="选择库位 / 批次"
+      :width="dialogWidth"
+      destroy-on-close
+      @closed="onSelectClosed"
+    >
+      <div v-loading="stockLoading">
+        <el-alert
+          v-if="currentSelectItem"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 12px"
+        >
+          <template #title>
+            货品：<b>{{ currentSelectItem.sku }} - {{ currentSelectItem.name }}</b>
+            ，需求数量 <b>{{ currentSelectItem.requestedQty }}</b> 件
+          </template>
+        </el-alert>
+
+        <el-empty
+          v-if="!stockLoading && availableStock.length === 0"
+          description="该货品暂无可用库存"
+        />
+
+        <el-table
+          v-else
+          :data="availableStock"
+          stripe
+          border
+          style="width: 100%"
+          highlight-current-row
+          @current-change="onStockSelect"
+        >
+          <el-table-column label="库位" min-width="110">
+            <template #default="{ row }">
+              <b>{{ row.locationCode }}</b>
+              <div style="font-size:11px;color:#909399">{{ row.locationArea || '-' }}</div>
+            </template>
+          </el-table-column>
+          <el-table-column label="可用数量" width="90" align="center">
+            <template #default="{ row }">
+              <b :class="{ 'stock-low': row.qty < (currentSelectItem?.requestedQty || 0) }">
+                {{ row.qty }}
+              </b>
+            </template>
+          </el-table-column>
+          <el-table-column label="批次号" min-width="130">
+            <template #default="{ row }">
+              <b>{{ row.itemKey || '-' }}</b>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产日期" width="110" align="center">
+            <template #default="{ row }">{{ row.productionDate || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="到期日" width="110" align="center">
+            <template #default="{ row }">
+              <span :class="{ 'expire-soon': isExpiringSoon(row.expiryDate) }">
+                {{ row.expiryDate || '-' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="保质期(天)" width="90" align="center">
+            <template #default="{ row }">{{ row.shelfLifeDays || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="生产厂商" min-width="120" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.manufacturer || '-' }}</template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <template #footer>
+        <el-button @click="selectDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :disabled="!selectedStock"
+          :loading="assigning"
+          @click="confirmAssign"
+        >
+          确认选择
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -188,9 +307,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import * as outboundApi from '@/api/outbound'
+import { useMobile } from '@/composables/useMobile'
 
 const route = useRoute()
 const router = useRouter()
+const { isMobile } = useMobile()
+const dialogWidth = computed(() => (isMobile.value ? '92%' : '720px'))
 
 const orderId = computed(() => route.params.id)
 const isListMode = computed(() => !orderId.value || orderId.value === 'list')
@@ -204,6 +326,14 @@ const detail = ref(null)
 const loading = ref(false)
 const starting = ref(false)
 const completing = ref(false)
+
+// 人工选库位
+const selectDialogVisible = ref(false)
+const currentSelectItem = ref(null)
+const availableStock = ref([])
+const stockLoading = ref(false)
+const selectedStock = ref(null)
+const assigning = ref(false)
 
 async function loadPending() {
   pendingLoading.value = true
@@ -239,8 +369,6 @@ async function handleStart() {
   try {
     const res = await outboundApi.startPicking(orderId.value)
     ElMessage.success('已开始拣货，库位灯光已点亮')
-    // 使用返回结果刷新明细（含库位分配）
-    // startPicking 返回项用 itemId，统一映射为 id 以保持与 detail 接口一致
     if (res && res.items) {
       detail.value = {
         ...detail.value,
@@ -256,7 +384,13 @@ async function handleStart() {
           locationCode: it.locationCode,
           locationArea: it.locationArea,
           deviceNo: it.deviceNo,
-          availableQty: it.availableQty
+          availableQty: it.availableQty,
+          batchId: it.batchId,
+          itemKey: it.itemKey,
+          productionDate: it.productionDate,
+          shelfLifeDays: it.shelfLifeDays,
+          manufacturer: it.manufacturer,
+          expiryDate: it.expiryDate
         }))
       }
     } else {
@@ -289,6 +423,62 @@ async function handleComplete() {
   } finally {
     completing.value = false
   }
+}
+
+// ===== 人工选库位 =====
+async function openSelectDialog(item) {
+  currentSelectItem.value = item
+  selectedStock.value = null
+  selectDialogVisible.value = true
+  stockLoading.value = true
+  try {
+    availableStock.value = await outboundApi.availableStock(item.productId)
+  } finally {
+    stockLoading.value = false
+  }
+}
+
+function onStockSelect(row) {
+  selectedStock.value = row
+}
+
+function onSelectClosed() {
+  currentSelectItem.value = null
+  availableStock.value = []
+  selectedStock.value = null
+}
+
+async function confirmAssign() {
+  if (!selectedStock.value || !currentSelectItem.value) return
+  const stock = selectedStock.value
+  if (stock.qty < currentSelectItem.value.requestedQty) {
+    ElMessage.warning(`所选库存不足（仅剩 ${stock.qty} 件）`)
+    return
+  }
+  assigning.value = true
+  try {
+    const updated = await outboundApi.assignLocation(
+      orderId.value,
+      currentSelectItem.value.id,
+      stock.locationId,
+      stock.batchId
+    )
+    // 更新本地明细中对应项
+    const items = detail.value.items.map((it) =>
+      it.id === updated.id ? { ...it, ...updated } : it
+    )
+    detail.value = { ...detail.value, items }
+    ElMessage.success(`已分配库位 ${stock.locationCode}（批次 ${stock.itemKey || '无'}）`)
+    selectDialogVisible.value = false
+  } finally {
+    assigning.value = false
+  }
+}
+
+function isExpiringSoon(expiryDate) {
+  if (!expiryDate) return false
+  const days = Math.ceil((new Date(expiryDate) - new Date()) / 86400000)
+  return days <= 30
 }
 
 function statusText(s) {
@@ -333,7 +523,6 @@ onMounted(() => {
   }
 })
 
-// 路由参数变化时（从列表进入具体单据，或返回列表）刷新数据
 watch(
   () => route.params.id,
   (newId) => {
@@ -456,11 +645,25 @@ watch(
 .pick-qty {
   font-size: 14px;
   color: #606266;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   .qty-num {
     color: $danger;
     font-size: 16px;
   }
+}
+.pick-batch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 6px;
+  background: #f5f7fa;
+  padding: 6px 10px;
+  border-radius: 6px;
+  .batch-label { color: #909399; }
+  .batch-meta { color: #909399; font-size: 12px; }
 }
 .pick-device {
   display: flex;
@@ -468,5 +671,12 @@ watch(
   gap: 4px;
   font-size: 12px;
   color: #67C23A;
+}
+.stock-low {
+  color: #F56C6C;
+}
+.expire-soon {
+  color: #E6A23C;
+  font-weight: 600;
 }
 </style>

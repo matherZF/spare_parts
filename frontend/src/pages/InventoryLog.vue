@@ -86,6 +86,26 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
+        <el-table-column label="批次号" min-width="130">
+          <template #default="{ row }">
+            <b v-if="row.itemKey">{{ row.itemKey }}</b>
+            <span v-else style="color:#c0c4cc">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产日期" width="110" align="center">
+          <template #default="{ row }">{{ row.productionDate || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="到期日" width="110" align="center">
+          <template #default="{ row }">
+            <span v-if="row.expiryDate" :class="{ 'expire-soon': isExpiringSoon(row.expiryDate) }">
+              {{ row.expiryDate }}
+            </span>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产厂商" min-width="120" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.manufacturer || '-' }}</template>
+        </el-table-column>
         <el-table-column prop="operator" label="操作人" width="110" align="center">
           <template #default="{ row }">{{ row.operator || '-' }}</template>
         </el-table-column>
@@ -167,6 +187,12 @@ function refTypeLabel(type) {
   return type
 }
 
+function isExpiringSoon(expiryDate) {
+  if (!expiryDate) return false
+  const days = Math.ceil((new Date(expiryDate) - new Date()) / 86400000)
+  return days <= 30
+}
+
 function pad(n) {
   return n < 10 ? '0' + n : '' + n
 }
@@ -217,6 +243,10 @@ onMounted(() => {
   font-weight: 600;
 }
 .qty-out {
+  color: #e6a23c;
+  font-weight: 600;
+}
+.expire-soon {
   color: #e6a23c;
   font-weight: 600;
 }

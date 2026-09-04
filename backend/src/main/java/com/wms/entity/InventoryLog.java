@@ -67,6 +67,19 @@ public class InventoryLog {
     @Column(length = 255)
     private String remark;
 
+    // ===== 批次信息 =====
+    @Column(length = 64)
+    private String itemKey;
+
+    @Column(name = "production_date")
+    private java.time.LocalDate productionDate;
+
+    @Column(name = "shelf_life_days")
+    private Integer shelfLifeDays;
+
+    @Column(length = 128)
+    private String manufacturer;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
@@ -101,6 +114,14 @@ public class InventoryLog {
     public void setOperator(String operator) { this.operator = operator; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+    public String getItemKey() { return itemKey; }
+    public void setItemKey(String itemKey) { this.itemKey = itemKey; }
+    public java.time.LocalDate getProductionDate() { return productionDate; }
+    public void setProductionDate(java.time.LocalDate productionDate) { this.productionDate = productionDate; }
+    public Integer getShelfLifeDays() { return shelfLifeDays; }
+    public void setShelfLifeDays(Integer shelfLifeDays) { this.shelfLifeDays = shelfLifeDays; }
+    public String getManufacturer() { return manufacturer; }
+    public void setManufacturer(String manufacturer) { this.manufacturer = manufacturer; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

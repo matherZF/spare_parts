@@ -40,6 +40,43 @@
           controls-position="right"
         />
       </el-form-item>
+
+      <el-divider content-position="left">批次信息</el-divider>
+
+      <el-form-item label="批次号">
+        <el-input
+          v-model="form.itemKey"
+          placeholder="留空则系统自动生成"
+          clearable
+        />
+      </el-form-item>
+      <el-form-item label="生产日期">
+        <el-date-picker
+          v-model="form.productionDate"
+          type="date"
+          value-format="YYYY-MM-DD"
+          placeholder="选择生产日期"
+          style="width: 100%"
+        />
+      </el-form-item>
+      <el-form-item label="保质期(天)">
+        <el-input-number
+          v-model="form.shelfLifeDays"
+          :min="1"
+          :max="99999"
+          style="width: 100%"
+          controls-position="right"
+          placeholder="请输入保质期天数"
+        />
+      </el-form-item>
+      <el-form-item label="生产厂商">
+        <el-input
+          v-model="form.manufacturer"
+          placeholder="请输入生产厂商"
+          clearable
+        />
+      </el-form-item>
+
       <el-alert
         v-if="selectedProduct"
         type="info"
@@ -89,7 +126,14 @@ const submitting = ref(false)
 const productsLoading = ref(false)
 const productList = ref([])
 
-const emptyForm = () => ({ productId: null, planQty: 100 })
+const emptyForm = () => ({
+  productId: null,
+  planQty: 100,
+  itemKey: '',
+  productionDate: '',
+  shelfLifeDays: null,
+  manufacturer: ''
+})
 const form = reactive(emptyForm())
 
 const rules = {
@@ -143,7 +187,11 @@ async function submit() {
   try {
     const res = await ordersApi.create({
       productId: form.productId,
-      planQty: form.planQty
+      planQty: form.planQty,
+      itemKey: form.itemKey?.trim() || undefined,
+      productionDate: form.productionDate || undefined,
+      shelfLifeDays: form.shelfLifeDays || undefined,
+      manufacturer: form.manufacturer?.trim() || undefined
     })
     ElMessage.success(`创建入库单成功：${res.orderNo}`)
     visible.value = false

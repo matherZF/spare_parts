@@ -96,13 +96,102 @@ public class OutboundService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public OutboundOrderDetailVO detail(Long id) {
         return orderRepo.findDetailById(id).map(this::toDetail)
                 .orElseThrow(() -> new BizException("领用单不存在"));
     }
 
     /**
-     * 开始拣货：为每个商品项分配库存库位，并点亮对应库位灯光设备。
+     * 查询某商品的可用库存列表（含批次详情），按 FIFO（到期日/生产日期升序）排序。
+     * 用于出库时人工选择库位/批次。
+     */
+    @Transactional(readOnly = true)
+    public List<AvailableStockVO> listAvailableInventory(Long productId) {
+        Product product = productRepo.findById(productId)
+                .orElseThrow(() -> new BizException("商品不存在"));
+        List<Inventory> stocks = inventoryRepo.findAllByProductId(productId).stream()
+                .filter(s -> s.getQty() > 0)
+                .sorted(Comparator
+                        .comparing((Inventory s) -> s.getBatch() != null ? s.getBatch().getExpiryDate() : null,
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(s -> s.getBatch() != null ? s.getBatch().getProductionDate() : null,
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparingInt(Inventory::getQty).reversed())
+                .collect(Collectors.toList());
+        return stocks.stream().map(s -> {
+            Batch b = s.getBatch();
+            return new AvailableStockVO(
+                    s.getId(),
+                    product.getId(), product.getSku(), product.getName(),
+                    s.getLocation().getId(), s.getLocation().getCode(),
+                    s.getLocation().getArea(), s.getLocation().getDeviceNo(),
+                    s.getQty(),
+                    b != null ? b.getId() : null,
+                    b != null ? b.getItemKey() : null,
+                    b != null ? b.getProductionDate() : null,
+                    b != null ? b.getShelfLifeDays() : null,
+                    b != null ? b.getManufacturer() : null,
+                    b != null ? b.getExpiryDate() : null
+            );
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 人工为出库项分配库位+批次。
+     */
+    @Transactional
+    public OutboundItemVO assignLocation(Long orderId, Long itemId, Long locationId, Long batchId) {
+        OutboundOrder order = orderRepo.findDetailById(orderId)
+                .orElseThrow(() -> new BizException("领用单不存在"));
+        if (order.getStatus() != OutboundStatus.PENDING && order.getStatus() != OutboundStatus.PICKING) {
+            throw new BizException("当前状态不可分配库位");
+        }
+        OutboundItem item = order.getItems().stream()
+                .filter(it -> it.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new BizException("拣货项不存在"));
+        if (item.getProduct() == null) {
+            throw new BizException("货品信息缺失");
+        }
+        // 校验该库存记录存在且数量充足
+        Inventory stock;
+        if (batchId != null) {
+            stock = inventoryRepo.findByProductIdAndLocationIdAndBatchId(
+                    item.getProduct().getId(), locationId, batchId)
+                    .orElseThrow(() -> new BizException("指定库位/批次的库存不存在"));
+        } else {
+            stock = inventoryRepo.findByProductIdAndLocationId(item.getProduct().getId(), locationId)
+                    .orElseThrow(() -> new BizException("指定库位的库存不存在"));
+        }
+        if (stock.getQty() < item.getRequestedQty()) {
+            throw new BizException(String.format("所选库存不足，仅剩 %d 件", stock.getQty()));
+        }
+        item.setLocation(stock.getLocation());
+        item.setBatch(stock.getBatch());
+        orderRepo.save(order);
+
+        // 点亮对应库位灯光
+        String deviceNo = deviceService.lightUp(stock.getLocation().getId());
+
+        int avail = stock.getQty();
+        Batch b = stock.getBatch();
+        return new OutboundItemVO(
+                item.getId(), item.getProduct().getId(), item.getProduct().getSku(),
+                item.getProduct().getName(), item.getRequestedQty(), item.getPickedQty(),
+                stock.getLocation().getId(), stock.getLocation().getCode(),
+                stock.getLocation().getArea(), deviceNo, avail,
+                b != null ? b.getId() : null,
+                b != null ? b.getItemKey() : null,
+                b != null ? b.getProductionDate() : null,
+                b != null ? b.getShelfLifeDays() : null,
+                b != null ? b.getManufacturer() : null,
+                b != null ? b.getExpiryDate() : null
+        );
+    }
+
+    /**
+     * 开始拣货：为每个商品项按 FIFO 自动分配库位+批次，并点亮对应库位灯光设备。
      */
     @Transactional
     public Map<String, Object> startPicking(Long orderId) {
@@ -113,18 +202,62 @@ public class OutboundService {
         }
         List<Map<String, Object>> pickingItems = new ArrayList<>();
         for (OutboundItem item : order.getItems()) {
-            // 找到该商品有库存的库位（按库存量降序，取第一个）
-            List<Inventory> stocks = inventoryRepo.findAllByProductId(item.getProduct().getId());
-            Inventory stock = stocks.stream()
+            // 若已人工分配库位+批次，则保留，仅点亮灯光
+            if (item.getLocation() != null) {
+                String deviceNo = deviceService.lightUp(item.getLocation().getId());
+                Batch b = item.getBatch();
+                Map<String, Object> mi = new LinkedHashMap<>();
+                mi.put("itemId", item.getId());
+                mi.put("productId", item.getProduct().getId());
+                mi.put("sku", item.getProduct().getSku());
+                mi.put("name", item.getProduct().getName());
+                mi.put("requestedQty", item.getRequestedQty());
+                mi.put("locationId", item.getLocation().getId());
+                mi.put("locationCode", item.getLocation().getCode());
+                mi.put("locationArea", item.getLocation().getArea());
+                mi.put("deviceNo", deviceNo);
+                int avail = 0;
+                if (b != null) {
+                    avail = inventoryRepo.findByProductIdAndLocationIdAndBatchId(
+                            item.getProduct().getId(), item.getLocation().getId(), b.getId())
+                            .map(Inventory::getQty).orElse(0);
+                }
+                mi.put("availableQty", avail);
+                mi.put("batchId", b != null ? b.getId() : null);
+                mi.put("itemKey", b != null ? b.getItemKey() : null);
+                mi.put("productionDate", b != null ? b.getProductionDate() : null);
+                mi.put("shelfLifeDays", b != null ? b.getShelfLifeDays() : null);
+                mi.put("manufacturer", b != null ? b.getManufacturer() : null);
+                mi.put("expiryDate", b != null ? b.getExpiryDate() : null);
+                pickingItems.add(mi);
+                continue;
+            }
+            // 找到该商品有库存的库位，按 FIFO 排序（到期日/生产日期升序），取第一个满足数量的
+            List<Inventory> stocks = inventoryRepo.findAllByProductId(item.getProduct().getId()).stream()
                     .filter(s -> s.getQty() > 0)
-                    .max(Comparator.comparingInt(Inventory::getQty))
+                    .sorted(Comparator
+                            .comparing((Inventory s) -> s.getBatch() != null ? s.getBatch().getExpiryDate() : null,
+                                    Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(s -> s.getBatch() != null ? s.getBatch().getProductionDate() : null,
+                                    Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparingInt(Inventory::getQty).reversed())
+                    .collect(Collectors.toList());
+            Inventory stock = stocks.stream()
+                    .filter(s -> s.getQty() >= item.getRequestedQty())
+                    .findFirst()
                     .orElse(null);
             if (stock == null) {
-                throw new BizException(String.format("商品 %s 无可用库存", item.getProduct().getSku()));
+                // 没有单个批次满足，取库存最大的一个提示不足
+                Inventory maxStock = stocks.stream().max(Comparator.comparingInt(Inventory::getQty)).orElse(null);
+                throw new BizException(String.format("商品 %s 无可用库存（最大单批次 %d 件）",
+                        item.getProduct().getSku(),
+                        maxStock != null ? maxStock.getQty() : 0));
             }
             item.setLocation(stock.getLocation());
+            item.setBatch(stock.getBatch());
             // 预留接口：点亮库位灯光设备
             String deviceNo = deviceService.lightUp(stock.getLocation().getId());
+            Batch b = stock.getBatch();
             Map<String, Object> mi = new LinkedHashMap<>();
             mi.put("itemId", item.getId());
             mi.put("productId", item.getProduct().getId());
@@ -136,6 +269,13 @@ public class OutboundService {
             mi.put("locationArea", stock.getLocation().getArea());
             mi.put("deviceNo", deviceNo);
             mi.put("availableQty", stock.getQty());
+            // 批次信息
+            mi.put("batchId", b != null ? b.getId() : null);
+            mi.put("itemKey", b != null ? b.getItemKey() : null);
+            mi.put("productionDate", b != null ? b.getProductionDate() : null);
+            mi.put("shelfLifeDays", b != null ? b.getShelfLifeDays() : null);
+            mi.put("manufacturer", b != null ? b.getManufacturer() : null);
+            mi.put("expiryDate", b != null ? b.getExpiryDate() : null);
             pickingItems.add(mi);
         }
         order.setStatus(OutboundStatus.PICKING);
@@ -161,9 +301,18 @@ public class OutboundService {
             if (item.getLocation() == null) {
                 throw new BizException("存在未分配库位的拣货项，请先开始拣货");
             }
-            Inventory inv = inventoryRepo
-                    .findByProductIdAndLocationId(item.getProduct().getId(), item.getLocation().getId())
-                    .orElseThrow(() -> new BizException("库存记录不存在"));
+            Long productId = item.getProduct().getId();
+            Long locationId = item.getLocation().getId();
+            Long batchId = item.getBatch() != null ? item.getBatch().getId() : null;
+
+            Inventory inv;
+            if (batchId != null) {
+                inv = inventoryRepo.findByProductIdAndLocationIdAndBatchId(productId, locationId, batchId)
+                        .orElseThrow(() -> new BizException("库存记录不存在"));
+            } else {
+                inv = inventoryRepo.findByProductIdAndLocationId(productId, locationId)
+                        .orElseThrow(() -> new BizException("库存记录不存在"));
+            }
             if (inv.getQty() < item.getRequestedQty()) {
                 throw new BizException(String.format(
                         "库位 %s 商品 %s 库存不足，剩余 %d 件",
@@ -177,13 +326,18 @@ public class OutboundService {
             // 熄灭灯光
             deviceService.lightOff(item.getLocation().getId());
 
-            // 记录出库日志
+            // 记录出库日志（含批次信息）
+            Batch b = item.getBatch();
             inventoryLogService.record(
                     item.getProduct().getId(), item.getProduct().getSku(), item.getProduct().getName(),
                     item.getLocation().getId(), item.getLocation().getCode(),
                     "OUTBOUND", item.getRequestedQty(), beforeQty, afterQty,
                     "OUTBOUND", order.getOrderNo(),
-                    currentOperator(), null
+                    currentOperator(), null,
+                    b != null ? b.getItemKey() : null,
+                    b != null ? b.getProductionDate() : null,
+                    b != null ? b.getShelfLifeDays() : null,
+                    b != null ? b.getManufacturer() : null
             );
         }
         order.setStatus(OutboundStatus.DONE);
@@ -206,14 +360,25 @@ public class OutboundService {
                     String locArea = it.getLocation() != null ? it.getLocation().getArea() : null;
                     String deviceNo = it.getLocation() != null ? it.getLocation().getDeviceNo() : null;
                     int avail = 0;
-                    if (locId != null) {
+                    Batch b = it.getBatch();
+                    Long batchId = b != null ? b.getId() : null;
+                    if (locId != null && batchId != null) {
+                        avail = inventoryRepo.findByProductIdAndLocationIdAndBatchId(it.getProduct().getId(), locId, batchId)
+                                .map(Inventory::getQty).orElse(0);
+                    } else if (locId != null) {
                         avail = inventoryRepo.findByProductIdAndLocationId(it.getProduct().getId(), locId)
                                 .map(Inventory::getQty).orElse(0);
                     }
                     return new OutboundItemVO(
                             it.getId(), it.getProduct().getId(), it.getProduct().getSku(),
                             it.getProduct().getName(), it.getRequestedQty(), it.getPickedQty(),
-                            locId, locCode, locArea, deviceNo, avail
+                            locId, locCode, locArea, deviceNo, avail,
+                            batchId,
+                            b != null ? b.getItemKey() : null,
+                            b != null ? b.getProductionDate() : null,
+                            b != null ? b.getShelfLifeDays() : null,
+                            b != null ? b.getManufacturer() : null,
+                            b != null ? b.getExpiryDate() : null
                     );
                 }).collect(Collectors.toList());
         return new OutboundOrderDetailVO(o.getId(), o.getOrderNo(), o.getStatus().name(),

@@ -1,28 +1,22 @@
 package com.wms.dto;
 
-import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * 库存变动日志列表项
+ * 可选库存（含批次详情），用于出库时人工选择库位/批次
  */
-public record InventoryLogVO(
-        Long id,
+public record AvailableStockVO(
+        Long inventoryId,
         Long productId,
         String sku,
         String productName,
         Long locationId,
         String locationCode,
-        String changeType,
-        int changeQty,
-        int beforeQty,
-        int afterQty,
-        String refType,
-        String refNo,
-        String operator,
-        String remark,
-        Instant createdAt,
+        String locationArea,
+        String deviceNo,
+        int qty,
         // 批次信息
+        Long batchId,
         String itemKey,
         LocalDate productionDate,
         Integer shelfLifeDays,
