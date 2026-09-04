@@ -6,6 +6,8 @@ import com.wms.entity.*;
 import com.wms.repository.InventoryRepository;
 import com.wms.repository.LocationRepository;
 import com.wms.repository.PutawayOrderRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,13 +19,16 @@ public class PutawayService {
     private final PutawayOrderRepository orderRepo;
     private final LocationRepository locationRepo;
     private final InventoryRepository inventoryRepo;
+    private final InventoryLogService inventoryLogService;
 
     public PutawayService(PutawayOrderRepository orderRepo,
                           LocationRepository locationRepo,
-                          InventoryRepository inventoryRepo) {
+                          InventoryRepository inventoryRepo,
+                          InventoryLogService inventoryLogService) {
         this.orderRepo = orderRepo;
         this.locationRepo = locationRepo;
         this.inventoryRepo = inventoryRepo;
+        this.inventoryLogService = inventoryLogService;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -61,12 +66,23 @@ public class PutawayService {
 
         Product product = order.getProduct();
         Inventory inv = inventoryRepo.findByProductIdAndLocationId(product.getId(), loc.getId()).orElse(null);
+        int beforeQty = inv == null ? 0 : inv.getQty();
+        int afterQty = beforeQty + qty;
         if (inv == null) {
             inv = new Inventory(product, loc, qty, Instant.now());
         } else {
-            inv.setQty(inv.getQty() + qty);
+            inv.setQty(afterQty);
         }
         inventoryRepo.save(inv);
+
+        // 记录入库日志
+        inventoryLogService.record(
+                product.getId(), product.getSku(), product.getName(),
+                loc.getId(), loc.getCode(),
+                "INBOUND", qty, beforeQty, afterQty,
+                "PUTAWAY", order.getOrderNo(),
+                currentOperator(), null
+        );
 
         boolean done = order.getStatus() == PutawayStatus.DONE;
         String msg = done ? "上架完成，订单已结束" : "上架成功，数量 " + qty;
@@ -77,5 +93,13 @@ public class PutawayService {
                 "done", done,
                 "msg", msg
         );
+    }
+
+    private String currentOperator() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null || "anonymousUser".equals(auth.getPrincipal())) {
+            return null;
+        }
+        return String.valueOf(auth.getPrincipal());
     }
 }

@@ -65,6 +65,12 @@ const routes = [
     meta: { title: '库存查询', icon: 'DataAnalysis' }
   },
   {
+    path: '/inventory/logs',
+    name: 'InventoryLog',
+    component: () => import('@/pages/InventoryLog.vue'),
+    meta: { title: '库存日志', icon: 'Document' }
+  },
+  {
     path: '/users',
     name: 'Users',
     component: () => import('@/pages/Users.vue'),

@@ -53,6 +53,10 @@
             <el-icon><Search /></el-icon>
             <span>库存查询</span>
           </el-menu-item>
+          <el-menu-item index="/inventory/logs">
+            <el-icon><Document /></el-icon>
+            <span>库存日志</span>
+          </el-menu-item>
         </el-sub-menu>
 
         <!-- 5. 系统管理（仅管理员） -->

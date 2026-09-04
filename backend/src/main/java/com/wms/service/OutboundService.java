@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -25,15 +27,18 @@ public class OutboundService {
     private final ProductRepository productRepo;
     private final InventoryRepository inventoryRepo;
     private final DeviceService deviceService;
+    private final InventoryLogService inventoryLogService;
 
     public OutboundService(OutboundOrderRepository orderRepo,
                            ProductRepository productRepo,
                            InventoryRepository inventoryRepo,
-                           DeviceService deviceService) {
+                           DeviceService deviceService,
+                           InventoryLogService inventoryLogService) {
         this.orderRepo = orderRepo;
         this.productRepo = productRepo;
         this.inventoryRepo = inventoryRepo;
         this.deviceService = deviceService;
+        this.inventoryLogService = inventoryLogService;
     }
 
     public synchronized String generateOrderNo() {
@@ -164,11 +169,22 @@ public class OutboundService {
                         "库位 %s 商品 %s 库存不足，剩余 %d 件",
                         item.getLocation().getCode(), item.getProduct().getSku(), inv.getQty()));
             }
-            inv.setQty(inv.getQty() - item.getRequestedQty());
+            int beforeQty = inv.getQty();
+            int afterQty = beforeQty - item.getRequestedQty();
+            inv.setQty(afterQty);
             inventoryRepo.save(inv);
             item.setPickedQty(item.getRequestedQty());
             // 熄灭灯光
             deviceService.lightOff(item.getLocation().getId());
+
+            // 记录出库日志
+            inventoryLogService.record(
+                    item.getProduct().getId(), item.getProduct().getSku(), item.getProduct().getName(),
+                    item.getLocation().getId(), item.getLocation().getCode(),
+                    "OUTBOUND", item.getRequestedQty(), beforeQty, afterQty,
+                    "OUTBOUND", order.getOrderNo(),
+                    currentOperator(), null
+            );
         }
         order.setStatus(OutboundStatus.DONE);
         orderRepo.save(order);
@@ -202,5 +218,13 @@ public class OutboundService {
                 }).collect(Collectors.toList());
         return new OutboundOrderDetailVO(o.getId(), o.getOrderNo(), o.getStatus().name(),
                 itemVOs, o.getCreatedAt());
+    }
+
+    private String currentOperator() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null || "anonymousUser".equals(auth.getPrincipal())) {
+            return null;
+        }
+        return String.valueOf(auth.getPrincipal());
     }
 }
