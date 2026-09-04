@@ -2,7 +2,6 @@ package com.wms.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
@@ -32,7 +31,6 @@ public class User {
     @Column(nullable = false)
     private boolean enabled = true;
 
-    @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
 
@@ -43,6 +41,11 @@ public class User {
         this.password = password;
         this.displayName = displayName;
         this.role = role;
+    }
+
+    @PrePersist
+    void prePersist() {
+        this.createdAt = Instant.now();
     }
 
     public Long getId() { return id; }

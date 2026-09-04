@@ -1,7 +1,6 @@
 package com.wms.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
@@ -23,11 +22,15 @@ public class PutawayItem {
     @Column(nullable = false)
     private int qty;
 
-    @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
 
     public PutawayItem() {}
+
+    @PrePersist
+    void prePersist() {
+        this.createdAt = Instant.now();
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
