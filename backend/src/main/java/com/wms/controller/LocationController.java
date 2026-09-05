@@ -5,6 +5,7 @@ import com.wms.dto.LocationDTO;
 import com.wms.service.LocationService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,16 +32,19 @@ public class LocationController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<LocationDTO> create(@Valid @RequestBody LocationDTO dto) {
         return Result.ok(locationService.create(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<LocationDTO> update(@PathVariable Long id, @RequestBody LocationDTO dto) {
         return Result.ok(locationService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> delete(@PathVariable Long id) {
         locationService.delete(id);
         return Result.ok();

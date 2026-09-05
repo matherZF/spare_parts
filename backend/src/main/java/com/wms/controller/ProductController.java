@@ -5,6 +5,7 @@ import com.wms.dto.ProductDTO;
 import com.wms.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,16 +32,19 @@ public class ProductController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<ProductDTO> create(@Valid @RequestBody ProductDTO dto) {
         return Result.ok(productService.create(dto));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<ProductDTO> update(@PathVariable Long id, @RequestBody ProductDTO dto) {
         return Result.ok(productService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public Result<Void> delete(@PathVariable Long id) {
         productService.delete(id);
         return Result.ok();

@@ -81,6 +81,8 @@ function handleLogout() {
 </script>
 
 <style scoped lang="scss">
+@use 'sass:color';
+
 .mobile-layout {
   min-height: 100vh;
   background: #f0f2f5;
@@ -157,7 +159,7 @@ function handleLogout() {
     color: $primary;
   }
   &.primary.active {
-    color: darken($primary, 8%);
+    color: color.adjust($primary, $lightness: -8%);
     font-weight: 700;
     .icon {
       transform: scale(1.05);
