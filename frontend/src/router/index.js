@@ -24,6 +24,8 @@ const routes = [
     component: () => import('@/pages/Locations.vue'),
     meta: { title: '库位管理', icon: 'Location' }
   },
+  { path: '/equipments', name: 'Equipment', component: () => import('@/pages/Equipment.vue'), meta: { title: '设备管理', icon: 'Cpu' } },
+  { path: '/alerts', name: 'Alerts', component: () => import('@/pages/Alerts.vue'), meta: { title: '预警管理', icon: 'Bell' } },
   {
     path: '/orders',
     name: 'Orders',

@@ -29,7 +29,9 @@
             <el-icon><Location /></el-icon>
             <span>库位管理</span>
           </el-menu-item>
+          <el-menu-item index="/equipments"><el-icon><Cpu /></el-icon><span>设备管理</span></el-menu-item>
         </el-sub-menu>
+        <el-menu-item index="/alerts"><el-icon><Bell /></el-icon><span>预警管理</span></el-menu-item>
 
         <!-- 2. 入库管理 -->
         <el-menu-item index="/orders">

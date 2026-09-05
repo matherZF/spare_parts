@@ -1,0 +1,1 @@
+package com.wms.repository; import com.wms.entity.EquipmentUsage; import org.springframework.data.jpa.repository.JpaRepository; public interface EquipmentUsageRepository extends JpaRepository<EquipmentUsage,Long>{}

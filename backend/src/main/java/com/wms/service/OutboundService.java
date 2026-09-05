@@ -6,6 +6,7 @@ import com.wms.entity.*;
 import com.wms.repository.InventoryRepository;
 import com.wms.repository.OutboundOrderRepository;
 import com.wms.repository.ProductRepository;
+import com.wms.repository.EquipmentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,17 +29,22 @@ public class OutboundService {
     private final InventoryRepository inventoryRepo;
     private final DeviceService deviceService;
     private final InventoryLogService inventoryLogService;
+    private final EquipmentRepository equipmentRepo;
+    private final EquipmentService equipmentService;
 
     public OutboundService(OutboundOrderRepository orderRepo,
                            ProductRepository productRepo,
                            InventoryRepository inventoryRepo,
                            DeviceService deviceService,
-                           InventoryLogService inventoryLogService) {
+                           InventoryLogService inventoryLogService, EquipmentRepository equipmentRepo,
+                           EquipmentService equipmentService) {
         this.orderRepo = orderRepo;
         this.productRepo = productRepo;
         this.inventoryRepo = inventoryRepo;
         this.deviceService = deviceService;
         this.inventoryLogService = inventoryLogService;
+        this.equipmentRepo = equipmentRepo;
+        this.equipmentService = equipmentService;
     }
 
     public synchronized String generateOrderNo() {
@@ -63,6 +69,10 @@ public class OutboundService {
         OutboundOrder order = new OutboundOrder();
         order.setOrderNo(generateOrderNo());
         order.setStatus(OutboundStatus.PENDING);
+        if (req.equipmentId() != null) {
+            order.setEquipment(equipmentRepo.findById(req.equipmentId())
+                    .orElseThrow(() -> new BizException("领用设备不存在")));
+        }
         for (OutboundItemCreateReq ir : req.items()) {
             if (ir.requestedQty() == null || ir.requestedQty() <= 0) {
                 throw new BizException("数量必须大于0");
@@ -339,6 +349,7 @@ public class OutboundService {
                     b != null ? b.getShelfLifeDays() : null,
                     b != null ? b.getManufacturer() : null
             );
+            equipmentService.recordUsage(order.getEquipment(), item.getProduct(), item.getRequestedQty(), order.getOrderNo());
         }
         order.setStatus(OutboundStatus.DONE);
         orderRepo.save(order);

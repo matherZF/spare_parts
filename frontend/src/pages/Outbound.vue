@@ -130,6 +130,12 @@
       destroy-on-close
     >
       <el-form :model="createForm" label-width="0" @submit.prevent>
+        <div class="equipment-select">
+          <span>领用设备（可选）</span>
+          <el-select v-model="createForm.equipmentId" clearable filterable placeholder="选择设备，完成领用后将自动更新其备件生命周期" style="width: 360px">
+            <el-option v-for="e in equipmentList" :key="e.id" :value="e.id" :label="`${e.code} - ${e.name}`" />
+          </el-select>
+        </div>
         <div class="items-header">
           <span style="font-weight: 600">货品明细</span>
           <el-button type="primary" size="small" @click="addItem">
@@ -262,6 +268,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import * as outboundApi from '@/api/outbound'
 import * as productsApi from '@/api/products'
 import * as inventoryApi from '@/api/inventory'
+import * as equipmentApi from '@/api/equipment'
 import { useMobile } from '@/composables/useMobile'
 
 const router = useRouter()
@@ -278,9 +285,10 @@ const createDialogVisible = ref(false)
 const submitting = ref(false)
 const productsLoading = ref(false)
 const productList = ref([])
+const equipmentList = ref([])
 const stockMap = ref({}) // productId -> totalQty
 
-const createForm = reactive({ items: [{ productId: null, requestedQty: 1 }] })
+const createForm = reactive({ equipmentId: null, items: [{ productId: null, requestedQty: 1 }] })
 
 const detailDialogVisible = ref(false)
 const detailLoading = ref(false)
@@ -329,12 +337,15 @@ function statusTagType(s) {
 
 function openCreateDialog() {
   createForm.items = [{ productId: null, requestedQty: 1 }]
+  createForm.equipmentId = null
   createDialogVisible.value = true
   loadProducts()
+  loadEquipments()
 }
 
 function onCreateClosed() {
   createForm.items = [{ productId: null, requestedQty: 1 }]
+  createForm.equipmentId = null
 }
 
 async function loadProducts() {
@@ -358,6 +369,10 @@ async function loadProducts() {
   } catch {
     stockMap.value = {}
   }
+}
+
+async function loadEquipments() {
+  equipmentList.value = await equipmentApi.list({})
 }
 
 function getStock(productId) {
@@ -407,6 +422,7 @@ async function submitCreate() {
   submitting.value = true
   try {
     const res = await outboundApi.create({
+      equipmentId: createForm.equipmentId || null,
       items: items.map((it) => ({
         productId: it.productId,
         requestedQty: it.requestedQty
@@ -514,6 +530,13 @@ onMounted(loadData)
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+}
+.equipment-select {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #606266;
 }
 .item-row {
   display: flex;
