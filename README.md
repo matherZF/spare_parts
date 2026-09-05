@@ -84,6 +84,11 @@ $env:MYSQL_PASSWORD='你的 MySQL root 密码'
 # 可选：$env:MYSQL_DATABASE='wms'; $env:MYSQL_USERNAME='root'
 ```
 
+powershell 启动
+$env:JWT_SECRET='change-this-to-a-random-secret-at-least-32-bytes'
+$env:MYSQL_PASSWORD='root'
+cd C:\Users\张峰\IdeaProjects\spare_parts\backend
+mvn spring-boot:run
 ### 方式 1：开发联调（前端热更新 + 后端已打包 jar）
 
 ```bash
