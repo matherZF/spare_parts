@@ -2,30 +2,39 @@
 
 前后端分离的轻量级仓库管理系统，聚焦**简易上架流程**，面向桌面端管理员与移动端作业人员双端场景。后端 Spring Boot 3 + H2/MySQL；前端 Vue 3 + Vite + Element Plus（响应式，桌面侧边栏 / 移动底部 Tab）。
 
----
+***
 
 ## 一、功能概览
 
 ### 🔧 基础数据（桌面端）
+
 - **商品管理**：SKU / 名称 / 规格 / 单位 → 增删改查，SKU 全局唯一
+
 - **库位管理**：库位编码 / 区域 / 类型（常温/冷藏/大件/危险品/其他）/ 备注 → 编码唯一，存在库存时禁止删除
+
 - **上架单管理**：创建上架单（选择商品 + 计划数量）、状态筛选（待上架/已完成）、进度条、详情（含已上架明细）
 
 ### ✅ 上架作业（移动端优先，桌面通用，3 步）
+
 1. **选择待上架单**（卡片列表显示剩余数量 + 进度）
 2. **商品确认**：展示单据信息，可选输入 SKU 核对，不匹配禁止下一步
 3. **库位 + 数量 + 确认上架**：调用接口事务内累加 上架单据 + 上架明细 + 库存
 
 ### 📊 库存查询（双 Tab）
+
 - 按商品汇总：SKU / 名称 / 规格 / 单位 / 总库存
+
 - 按库位明细：库位 / 区域 / SKU / 商品 / 数量 / 更新时间
 
 ### 🎨 双端 UI
+
 - **桌面端（≥ 1024px）**：深色侧边栏 5 项菜单 + 顶部标题 + 栅格多列表单
+
 - **移动端（< 768px）**：蓝色顶栏 + 底部 5 Tab 导航（上架作业加粗高亮）+ 主按钮 ≥ 44×44px
+
 - 中间平板端：沿用桌面布局，宽度自适应
 
----
+***
 
 ## 二、架构
 
@@ -49,21 +58,21 @@
 └────────────────────────────┘
 ```
 
----
+***
 
 ## 三、环境要求
 
-| 组件 | 最低版本 | 备注 |
-|---|---|---|
-| JDK | 17 | `java -version` 校验；后端声明 target 17 |
-| Maven | 3.8+ | 构建后端 jar |
-| Node.js | 18+ | `node -v`；建议 20 LTS |
-| npm | 9+ | 随 Node 一起安装 |
-| 浏览器 | Chrome 90+ / Safari 14+ | 移动端兼容微信内置浏览器 |
+| 组件      | 最低版本                    | 备注                                |
+| ------- | ----------------------- | --------------------------------- |
+| JDK     | 17                      | `java -version` 校验；后端声明 target 17 |
+| Maven   | 3.8+                    | 构建后端 jar                          |
+| Node.js | 18+                     | `node -v`；建议 20 LTS               |
+| npm     | 9+                      | 随 Node 一起安装                       |
+| 浏览器     | Chrome 90+ / Safari 14+ | 移动端兼容微信内置浏览器                      |
 
 > 💡 沙箱/服务器如无法访问官方 npm，可加参数：`--registry=https://registry.npmmirror.com`；maven 同理建议提前配置国内 mirror。
 
----
+***
 
 ## 四、启动方式（推荐：后端 jar + 前端 dev）
 
@@ -85,10 +94,11 @@ $env:MYSQL_PASSWORD='你的 MySQL root 密码'
 ```
 
 powershell 启动
-$env:JWT_SECRET='change-this-to-a-random-secret-at-least-32-bytes'
-$env:MYSQL_PASSWORD='root'
-cd C:\Users\张峰\IdeaProjects\spare_parts\backend
+$env:JWT\_SECRET='change-this-to-a-random-secret-at-least-32-bytes'
+$env:MYSQL\_PASSWORD='root'
+cd C:\Users\张峰\IdeaProjects\spare\_parts\backend
 mvn spring-boot:run
+
 ### 方式 1：开发联调（前端热更新 + 后端已打包 jar）
 
 ```bash
@@ -135,6 +145,7 @@ mvn clean package -DskipTests
 ```
 
 ### 方式 4：一键脚本（Linux / Mac）
+
 ```bash
 cd /workspace
 chmod +x start.sh
@@ -142,50 +153,51 @@ chmod +x start.sh
 ./start.sh build      # 仅构建 jar + 前端 dist
 ```
 
----
+***
 
 ## 五、接口速览（全部前缀 `/api`，返回 `{code:0, msg:"", data:...}`）
 
-| 模块 | 方法 | 路径 | 说明 |
-|---|---|---|---|
-| 商品 | GET | `/products?sku=&name=&page=&size=` | 分页查询 |
-| | GET | `/products/{id}` | 详情 |
-| | POST | `/products` | 新增（sku/name 必填） |
-| | PUT | `/products/{id}` | 修改（SKU 不允许改） |
-| | DELETE | `/products/{id}` | 删除（已被上架单引用→失败） |
-| 库位 | GET/POST/PUT/DELETE | `/locations[...]` | 字段 code/area/type/remark；有库存时删除失败 |
-| 上架单 | GET | `/orders?status=&keyword=&page=&size=` | 列表（状态 PENDING/DONE） |
-| | GET | `/orders/pending` | 仅待上架（用于移动端选单，含剩余数量） |
-| | GET | `/orders/{id}` | 详情（商品信息 + 进度 + 明细） |
-| | POST | `/orders` | 创建（productId + planQty>0） |
-| 上架 | POST | `/putaway/confirm` | **核心事务** body:{orderId,locationId,qty} |
-| 库存 | GET | `/inventory/summary?sku=` | 按商品汇总（含 totalQty） |
-| | GET | `/inventory/details?sku=&locationCode=` | 按库位明细 |
+| 模块     | 方法                  | 路径                                      | 说明                                     |
+| ------ | ------------------- | --------------------------------------- | -------------------------------------- |
+| 商品     | GET                 | `/products?sku=&name=&page=&size=`      | 分页查询                                   |
+| <br /> | GET                 | `/products/{id}`                        | 详情                                     |
+| <br /> | POST                | `/products`                             | 新增（sku/name 必填）                        |
+| <br /> | PUT                 | `/products/{id}`                        | 修改（SKU 不允许改）                           |
+| <br /> | DELETE              | `/products/{id}`                        | 删除（已被上架单引用→失败）                         |
+| 库位     | GET/POST/PUT/DELETE | `/locations[...]`                       | 字段 code/area/type/remark；有库存时删除失败      |
+| 上架单    | GET                 | `/orders?status=&keyword=&page=&size=`  | 列表（状态 PENDING/DONE）                    |
+| <br /> | GET                 | `/orders/pending`                       | 仅待上架（用于移动端选单，含剩余数量）                    |
+| <br /> | GET                 | `/orders/{id}`                          | 详情（商品信息 + 进度 + 明细）                     |
+| <br /> | POST                | `/orders`                               | 创建（productId + planQty>0）              |
+| 上架     | POST                | `/putaway/confirm`                      | **核心事务** body:{orderId,locationId,qty} |
+| 库存     | GET                 | `/inventory/summary?sku=`               | 按商品汇总（含 totalQty）                      |
+| <br /> | GET                 | `/inventory/details?sku=&locationCode=` | 按库位明细                                  |
 
 分页接口 `data` 是 Spring `Page`：`{content:[...], totalElements:N, totalPages:N, number:0-based}`。
 
 错误：`code!=0` 时 `msg` 为中文友好提示（sku 已存在 / 超过计划数量，剩余40件 / 库位存在库存记录，无法删除 …）。
 
----
+***
 
 ## 六、典型流程：一次完整上架
 
 管理员桌面端：
+
 1. **商品管理 → 新增商品**：`SP-100` 法兰盘 DN50 个
 2. **库位管理 → 新增库位**：`D-03-02` D区 常温
 3. **上架单管理 → 新建上架单**：选择 SP-100，计划 100 → 生成 `PA202609040001`（待上架）
 
 作业员移动端：
-4. 浏览器打开 `http://<host>:5173/` → 底部 Tab 切换「上架作业」
-5. 步骤 1：点击单据 `PA202609040001`
-6. 步骤 2：确认商品信息；可选输入 SKU `SP-100` 核对（显示"核对通过"）→ 下一步
-7. 步骤 3：选择库位 `D-03-02`，数量默认 100 → 点击"确认上架"
-8. 弹窗提示"全部上架完成，单据已结束"→ 返回选单
+4\. 浏览器打开 `http://<host>:5173/` → 底部 Tab 切换「上架作业」
+5\. 步骤 1：点击单据 `PA202609040001`
+6\. 步骤 2：确认商品信息；可选输入 SKU `SP-100` 核对（显示"核对通过"）→ 下一步
+7\. 步骤 3：选择库位 `D-03-02`，数量默认 100 → 点击"确认上架"
+8\. 弹窗提示"全部上架完成，单据已结束"→ 返回选单
 
 管理员：
-9. **库存查询** Tab1：SP-100 总库存 100；Tab2：D-03-02 → SP-100 数量 100 ✅
+9\. **库存查询** Tab1：SP-100 总库存 100；Tab2：D-03-02 → SP-100 数量 100 ✅
 
----
+***
 
 ## 七、项目目录
 
@@ -221,7 +233,7 @@ chmod +x start.sh
         └── pages/ (Products / Locations / Orders / OrderDetail / Putaway / Inventory)
 ```
 
----
+***
 
 ## 八、常见问题
 
@@ -232,19 +244,25 @@ chmod +x start.sh
 5. **切换 MySQL 后第一次启动报错表不存在？** → 保持 `ddl-auto: update` 即可自动建表；生产环境建议改为 `validate` + Flyway/Liquibase
 6. **上架接口报错"超过计划数量"但还想再上？** → 重新创建一张上架单，补齐需要的数量（系统不支持超量上架，避免账实不符）
 
----
+***
 
 ## 九、非目标与后续路线图
 
 本期 **不包含**（如需要可后续迭代）：
+
 - 出库 / 拣货 / 盘点 / 调拨流程
+
 - 用户登录 + 角色权限（当前单用户共享）
+
 - 扫码枪硬件对接 / 摄像头扫码（代码中 Putaway 页 Step2 已预留输入框占位）
+
 - 多仓库 / 多组织 / 批次 / 序列号管理
 
 后续路线图：
+
 1. Spring Security + 登录 JWT
 2. 出库 / 盘点模块
 3. 摄像头扫码集成（html5-qrcode）
 4. Flyway 数据迁移 + 单元测试覆盖率 60%+
 5. Docker Compose 一键部署（后端 jar + MySQL + Nginx 静态）
+
