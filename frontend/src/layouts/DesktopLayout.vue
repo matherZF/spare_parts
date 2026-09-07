@@ -8,41 +8,70 @@
       </div>
       <el-menu
         :default-active="$route.path"
+        :default-openeds="defaultOpeneds"
         router
         background-color="#304156"
         text-color="#bfcbd9"
         active-text-color="#409EFF"
         unique-opened
       >
+        <!-- 1. 基础数据 -->
+        <el-sub-menu index="basic">
+          <template #title>
+            <el-icon><Files /></el-icon>
+            <span>基础数据</span>
+          </template>
+          <el-menu-item index="/products">
+            <el-icon><Goods /></el-icon>
+            <span>货品管理</span>
+          </el-menu-item>
+          <el-menu-item index="/locations">
+            <el-icon><Location /></el-icon>
+            <span>库位管理</span>
+          </el-menu-item>
+          <el-menu-item index="/equipments"><el-icon><Cpu /></el-icon><span>设备管理</span></el-menu-item>
+        </el-sub-menu>
+        <el-menu-item index="/alerts"><el-icon><Bell /></el-icon><span>预警管理</span></el-menu-item>
+
+        <!-- 2. 入库管理 -->
         <el-menu-item index="/orders">
           <el-icon><Tickets /></el-icon>
           <span>入库管理</span>
         </el-menu-item>
-        <el-menu-item index="/products">
-          <el-icon><Goods /></el-icon>
-          <span>货品管理</span>
-        </el-menu-item>
-        <el-menu-item index="/locations">
-          <el-icon><Location /></el-icon>
-          <span>库位管理</span>
-        </el-menu-item>
-        <el-menu-item index="/putaway" class="menu-primary">
-          <el-icon><Check /></el-icon>
-          <span>上架作业</span>
-        </el-menu-item>
+
+        <!-- 3. 出库管理 -->
         <el-menu-item index="/outbound">
           <el-icon><Box /></el-icon>
           <span>出库管理</span>
         </el-menu-item>
-        <el-menu-item index="/inventory">
-          <el-icon><DataAnalysis /></el-icon>
-          <span>库存查询</span>
-        </el-menu-item>
-        <!-- 仅管理员可见 -->
-        <el-menu-item v-if="authStore.isAdmin" index="/users">
-          <el-icon><UserFilled /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
+
+        <!-- 4. 库存管理 -->
+        <el-sub-menu index="inventory-group">
+          <template #title>
+            <el-icon><DataAnalysis /></el-icon>
+            <span>库存管理</span>
+          </template>
+          <el-menu-item index="/inventory">
+            <el-icon><Search /></el-icon>
+            <span>库存查询</span>
+          </el-menu-item>
+          <el-menu-item index="/inventory/logs">
+            <el-icon><Document /></el-icon>
+            <span>库存日志</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 5. 系统管理（仅管理员） -->
+        <el-sub-menu v-if="authStore.isAdmin" index="system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/users">
+            <el-icon><UserFilled /></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -88,12 +117,23 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
+// 根据当前路由自动展开对应的父级子菜单
+const defaultOpeneds = computed(() => {
+  const p = route.path
+  if (p.startsWith('/products') || p.startsWith('/locations')) return ['basic']
+  if (p.startsWith('/inventory')) return ['inventory-group']
+  if (p.startsWith('/users')) return ['system']
+  return []
+})
 
 function handleCommand(cmd) {
   if (cmd === 'logout') {
@@ -139,11 +179,6 @@ function handleCommand(cmd) {
 .logo-text {
   font-size: 16px;
   font-weight: 600;
-}
-.menu-primary {
-  :deep(.el-menu-item.is-active) {
-    font-weight: 600;
-  }
 }
 .header {
   background: #fff;

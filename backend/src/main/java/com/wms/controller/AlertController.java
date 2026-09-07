@@ -1,0 +1,2 @@
+package com.wms.controller; import com.wms.common.Result; import com.wms.service.EquipmentService; import org.springframework.web.bind.annotation.*; import java.util.*;
+@RestController @RequestMapping("/api/alerts") public class AlertController {private final EquipmentService s; public AlertController(EquipmentService s){this.s=s;} @GetMapping public Result<List<Map<String,Object>>> list(){return Result.ok(s.alerts());}}

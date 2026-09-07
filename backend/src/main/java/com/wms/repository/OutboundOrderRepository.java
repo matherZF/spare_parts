@@ -15,14 +15,16 @@ import java.util.Optional;
 public interface OutboundOrderRepository extends JpaRepository<OutboundOrder, Long> {
     Optional<OutboundOrder> findTopByOrderNoStartingWithOrderByOrderNoDesc(String prefix);
 
+    @EntityGraph(attributePaths = {"items"})
     @Query("select o from OutboundOrder o where (:status is null or o.status = :status) " +
             "order by o.id desc")
     Page<OutboundOrder> findByStatus(@Param("status") OutboundStatus status, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"items"})
     @Query("select o from OutboundOrder o where o.status = :status order by o.id desc")
     List<OutboundOrder> findPendingList(@Param("status") OutboundStatus status);
 
-    @EntityGraph(attributePaths = {"items", "items.product", "items.location"})
+    @EntityGraph(attributePaths = {"equipment", "items", "items.product", "items.location", "items.batch"})
     @Query("select o from OutboundOrder o where o.id = :id")
     Optional<OutboundOrder> findDetailById(@Param("id") Long id);
 }

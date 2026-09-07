@@ -17,7 +17,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="8" style="margin-bottom: 12px">
-        <el-card class="quick-card" shadow="hover" @click="goPicking">
+        <el-card class="quick-card" shadow="hover" @click="goPicking()">
           <div class="quick-card-body">
             <div class="quick-icon success-bg"><el-icon :size="28"><Box /></el-icon></div>
             <div class="quick-info">
@@ -124,11 +124,18 @@
     <el-dialog
       v-model="createDialogVisible"
       title="新建领用单"
-      width="640px"
+      :width="dialogWidth"
+      :top="isMobile ? '5vh' : '15vh'"
       @closed="onCreateClosed"
       destroy-on-close
     >
       <el-form :model="createForm" label-width="0" @submit.prevent>
+        <div class="equipment-select">
+          <span>领用设备（可选）</span>
+          <el-select v-model="createForm.equipmentId" clearable filterable placeholder="选择设备，完成领用后将自动更新其备件生命周期" style="width: 360px">
+            <el-option v-for="e in equipmentList" :key="e.id" :value="e.id" :label="`${e.code} - ${e.name}`" />
+          </el-select>
+        </div>
         <div class="items-header">
           <span style="font-weight: 600">货品明细</span>
           <el-button type="primary" size="small" @click="addItem">
@@ -140,12 +147,13 @@
           v-for="(item, idx) in createForm.items"
           :key="idx"
           class="item-row"
+          :class="{ 'item-row-mobile': isMobile }"
         >
           <el-select
             v-model="item.productId"
             filterable
             placeholder="搜索或选择货品"
-            style="flex: 1"
+            class="item-select"
             :loading="productsLoading"
           >
             <el-option
@@ -153,24 +161,35 @@
               :key="p.id"
               :label="`${p.sku} - ${p.name}`"
               :value="p.id"
-            />
+            >
+              <span>{{ p.sku }} - {{ p.name }}</span>
+              <span class="stock-tag" :class="{ 'stock-zero': getStock(p.id) <= 0 }">
+                库存 {{ getStock(p.id) }}
+              </span>
+            </el-option>
           </el-select>
-          <el-input-number
-            v-model="item.requestedQty"
-            :min="1"
-            :max="99999"
-            controls-position="right"
-            style="width: 160px; margin-left: 12px"
-          />
-          <el-button
-            type="danger"
-            link
-            style="margin-left: 8px"
-            :disabled="createForm.items.length <= 1"
-            @click="removeItem(idx)"
-          >
-            <el-icon><Delete /></el-icon>
-          </el-button>
+          <div class="item-qty-wrap">
+            <el-input-number
+              v-model="item.requestedQty"
+              :min="1"
+              :max="Math.max(1, getStock(item.productId))"
+              controls-position="right"
+              class="item-qty"
+            />
+            <el-button
+              type="danger"
+              link
+              class="item-del"
+              :disabled="createForm.items.length <= 1"
+              @click="removeItem(idx)"
+            >
+              <el-icon><Delete /></el-icon>
+            </el-button>
+          </div>
+        </div>
+        <div class="stock-hint" v-if="createForm.items.some(i => i.productId)">
+          <el-icon><InfoFilled /></el-icon>
+          <span>数量不能超过当前可用库存</span>
         </div>
 
         <el-empty
@@ -242,14 +261,19 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import PageHeader from '@/components/PageHeader.vue'
 import * as outboundApi from '@/api/outbound'
 import * as productsApi from '@/api/products'
+import * as inventoryApi from '@/api/inventory'
+import * as equipmentApi from '@/api/equipment'
+import { useMobile } from '@/composables/useMobile'
 
 const router = useRouter()
+const { isMobile } = useMobile()
+const dialogWidth = computed(() => (isMobile.value ? '92%' : '640px'))
 
 const filters = reactive({ status: '', keyword: '' })
 const page = reactive({ page: 1, size: 20 })
@@ -261,8 +285,10 @@ const createDialogVisible = ref(false)
 const submitting = ref(false)
 const productsLoading = ref(false)
 const productList = ref([])
+const equipmentList = ref([])
+const stockMap = ref({}) // productId -> totalQty
 
-const createForm = reactive({ items: [{ productId: null, requestedQty: 1 }] })
+const createForm = reactive({ equipmentId: null, items: [{ productId: null, requestedQty: 1 }] })
 
 const detailDialogVisible = ref(false)
 const detailLoading = ref(false)
@@ -311,23 +337,47 @@ function statusTagType(s) {
 
 function openCreateDialog() {
   createForm.items = [{ productId: null, requestedQty: 1 }]
+  createForm.equipmentId = null
   createDialogVisible.value = true
   loadProducts()
+  loadEquipments()
 }
 
 function onCreateClosed() {
   createForm.items = [{ productId: null, requestedQty: 1 }]
+  createForm.equipmentId = null
 }
 
 async function loadProducts() {
-  if (productList.value.length > 0) return
-  productsLoading.value = true
-  try {
-    const r = await productsApi.list({ page: 0, size: 500 })
-    productList.value = r.content || []
-  } finally {
-    productsLoading.value = false
+  if (productList.value.length === 0) {
+    productsLoading.value = true
+    try {
+      const r = await productsApi.list({ page: 0, size: 500 })
+      productList.value = r.content || []
+    } finally {
+      productsLoading.value = false
+    }
   }
+  // 每次打开都刷新库存汇总
+  try {
+    const stocks = await inventoryApi.summary()
+    const map = {}
+    for (const s of stocks || []) {
+      map[s.productId] = s.totalQty || 0
+    }
+    stockMap.value = map
+  } catch {
+    stockMap.value = {}
+  }
+}
+
+async function loadEquipments() {
+  equipmentList.value = await equipmentApi.list({})
+}
+
+function getStock(productId) {
+  if (!productId) return 0
+  return stockMap.value[productId] || 0
 }
 
 function addItem() {
@@ -353,6 +403,15 @@ async function submitCreate() {
       ElMessage.warning(`第 ${i + 1} 行数量必须大于 0`)
       return
     }
+    const avail = getStock(items[i].productId)
+    if (avail <= 0) {
+      ElMessage.warning(`第 ${i + 1} 行货品无可用库存`)
+      return
+    }
+    if (items[i].requestedQty > avail) {
+      ElMessage.warning(`第 ${i + 1} 行数量超过可用库存（${avail}）`)
+      return
+    }
   }
   // 检查重复货品
   const ids = items.map((it) => it.productId)
@@ -363,6 +422,7 @@ async function submitCreate() {
   submitting.value = true
   try {
     const res = await outboundApi.create({
+      equipmentId: createForm.equipmentId || null,
       items: items.map((it) => ({
         productId: it.productId,
         requestedQty: it.requestedQty
@@ -377,7 +437,7 @@ async function submitCreate() {
 }
 
 function goPicking(row) {
-  if (row) {
+  if (row && row.id != null) {
     router.push(`/outbound/picking/${row.id}`)
   } else {
     router.push('/outbound/picking/list')
@@ -471,10 +531,79 @@ onMounted(loadData)
   align-items: center;
   margin-bottom: 12px;
 }
+.equipment-select {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #606266;
+}
 .item-row {
   display: flex;
   align-items: center;
   margin-bottom: 12px;
+  .item-select {
+    flex: 1;
+  }
+  .item-qty-wrap {
+    display: flex;
+    align-items: center;
+    margin-left: 12px;
+  }
+  .item-qty {
+    width: 160px;
+  }
+  .item-del {
+    margin-left: 8px;
+  }
+}
+/* 移动端：货品行垂直排列，选择器和数量各占一行 */
+.item-row-mobile {
+  flex-direction: column;
+  align-items: stretch;
+  .item-select {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  .item-qty-wrap {
+    margin-left: 0;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .item-qty {
+    flex: 1;
+    width: auto;
+  }
+  .item-del {
+    margin-left: 12px;
+  }
+}
+.stock-tag {
+  float: right;
+  color: #67C23A;
+  font-size: 12px;
+  &.stock-zero {
+    color: #F56C6C;
+  }
+}
+.stock-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #909399;
+  margin-top: -4px;
+  margin-bottom: 8px;
+}
+/* 移动端弹窗底部按钮占满 */
+@media (max-width: 768px) {
+  :deep(.el-dialog__footer .el-dialog__btns) {
+    display: flex;
+    gap: 12px;
+    .el-button {
+      flex: 1;
+    }
+  }
 }
 .detail-top {
   display: flex;

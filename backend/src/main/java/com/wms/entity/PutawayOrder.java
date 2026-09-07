@@ -23,6 +23,11 @@ public class PutawayOrder {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    /** 关联批次（入库单新建时确定） */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "batch_id")
+    private Batch batch;
+
     @Column(nullable = false)
     private int planQty;
 
@@ -48,6 +53,8 @@ public class PutawayOrder {
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
     public Product getProduct() { return product; }
     public void setProduct(Product product) { this.product = product; }
+    public Batch getBatch() { return batch; }
+    public void setBatch(Batch batch) { this.batch = batch; }
     public int getPlanQty() { return planQty; }
     public void setPlanQty(int planQty) { this.planQty = planQty; }
     public void setPlanQty(Integer planQty) { this.planQty = planQty == null ? 0 : planQty; }

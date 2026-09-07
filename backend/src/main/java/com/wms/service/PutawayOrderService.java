@@ -2,10 +2,12 @@ package com.wms.service;
 
 import com.wms.common.BizException;
 import com.wms.dto.*;
+import com.wms.entity.Batch;
 import com.wms.entity.Product;
 import com.wms.entity.PutawayItem;
 import com.wms.entity.PutawayOrder;
 import com.wms.entity.PutawayStatus;
+import com.wms.repository.BatchRepository;
 import com.wms.repository.ProductRepository;
 import com.wms.repository.PutawayOrderRepository;
 import org.springframework.data.domain.Page;
@@ -25,10 +27,14 @@ import java.util.stream.Collectors;
 public class PutawayOrderService {
     private final PutawayOrderRepository orderRepo;
     private final ProductRepository productRepo;
+    private final BatchRepository batchRepo;
 
-    public PutawayOrderService(PutawayOrderRepository orderRepo, ProductRepository productRepo) {
+    public PutawayOrderService(PutawayOrderRepository orderRepo,
+                               ProductRepository productRepo,
+                               BatchRepository batchRepo) {
         this.orderRepo = orderRepo;
         this.productRepo = productRepo;
+        this.batchRepo = batchRepo;
     }
 
     public synchronized String generateOrderNo() {
@@ -45,6 +51,12 @@ public class PutawayOrderService {
         return prefix + String.format("%04d", nextSeq);
     }
 
+    private synchronized String generateItemKey(Product product) {
+        String prefix = "B" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
+        // 简化：基于时间戳生成唯一批次号
+        return prefix + System.currentTimeMillis() % 100000;
+    }
+
     @Transactional
     public PutawayOrderDetailVO create(PutawayOrderCreateReq req) {
         Product product = productRepo.findById(req.productId())
@@ -52,9 +64,27 @@ public class PutawayOrderService {
         if (req.planQty() == null || req.planQty() <= 0) {
             throw new BizException("planQty必须大于0");
         }
+
+        // 1. 创建批次
+        Batch batch = new Batch();
+        String itemKey = StringUtils.hasText(req.itemKey()) ? req.itemKey().trim() : generateItemKey(product);
+        if (batchRepo.existsByItemKey(itemKey)) {
+            throw new BizException("批次号已存在：" + itemKey);
+        }
+        batch.setItemKey(itemKey);
+        batch.setProductId(product.getId());
+        batch.setSku(product.getSku());
+        batch.setProductName(product.getName());
+        batch.setProductionDate(req.productionDate());
+        batch.setShelfLifeDays(req.shelfLifeDays());
+        batch.setManufacturer(StringUtils.hasText(req.manufacturer()) ? req.manufacturer().trim() : null);
+        batch = batchRepo.save(batch);
+
+        // 2. 创建入库单并关联批次
         PutawayOrder order = new PutawayOrder();
         order.setOrderNo(generateOrderNo());
         order.setProduct(product);
+        order.setBatch(batch);
         order.setPlanQty(req.planQty());
         order.setPutQty(0);
         order.setStatus(PutawayStatus.PENDING);
@@ -73,6 +103,7 @@ public class PutawayOrderService {
         return orderRepo.findByStatusAndKeyword(s, kw, pageable).map(this::toListItem);
     }
 
+    @Transactional(readOnly = true)
     public PutawayOrderDetailVO detail(Long id) {
         return orderRepo.findDetailById(id).map(this::toDetail)
                 .orElseThrow(() -> new BizException("上架单不存在"));
@@ -101,12 +132,22 @@ public class PutawayOrderService {
                 .sorted((a,b) -> Long.compare(a.getId(), b.getId()))
                 .map(this::toItemVO)
                 .collect(Collectors.toList());
+
+        // 批次信息
+        Batch b = o.getBatch();
+        String itemKey = b != null ? b.getItemKey() : null;
+        LocalDate productionDate = b != null ? b.getProductionDate() : null;
+        Integer shelfLifeDays = b != null ? b.getShelfLifeDays() : null;
+        String manufacturer = b != null ? b.getManufacturer() : null;
+        LocalDate expiryDate = b != null ? b.getExpiryDate() : null;
+
         return new PutawayOrderDetailVO(
                 o.getId(), o.getOrderNo(),
                 o.getProduct().getId(), o.getProduct().getSku(), o.getProduct().getName(),
                 o.getPlanQty(), o.getPutQty(), o.getStatus().name(),
                 progress, Math.max(0, o.getPlanQty() - o.getPutQty()),
-                itemVO, o.getCreatedAt()
+                itemVO, o.getCreatedAt(),
+                itemKey, productionDate, shelfLifeDays, manufacturer, expiryDate
         );
     }
 

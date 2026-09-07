@@ -25,5 +25,16 @@ export default defineConfig({
         additionalData: `@use "@/styles/variables.scss" as *;`
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('element-plus') || id.includes('@element-plus')) return 'element-plus'
+          if (id.includes('/vue/') || id.includes('vue-router') || id.includes('pinia')) return 'vue-vendor'
+        }
+      }
+    }
   }
 })

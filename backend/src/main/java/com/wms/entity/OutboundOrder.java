@@ -23,6 +23,11 @@ public class OutboundOrder {
     @Column(nullable = false, length = 16)
     private OutboundStatus status;
 
+    /** 本次领用对应的物流自动化设备；为空时表示普通领用。 */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "equipment_id")
+    private Equipment equipment;
+
     @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
@@ -38,6 +43,8 @@ public class OutboundOrder {
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
     public OutboundStatus getStatus() { return status; }
     public void setStatus(OutboundStatus status) { this.status = status; }
+    public Equipment getEquipment() { return equipment; }
+    public void setEquipment(Equipment equipment) { this.equipment = equipment; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public List<OutboundItem> getItems() { return items; }

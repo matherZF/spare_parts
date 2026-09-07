@@ -1,6 +1,7 @@
 package com.wms.dto;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 public record PutawayOrderDetailVO(
@@ -15,6 +16,12 @@ public record PutawayOrderDetailVO(
         Integer progress,
         Integer remainingQty,
         List<PutawayItemVO> items,
-        Instant createdAt
+        Instant createdAt,
+        // 批次信息
+        String itemKey,
+        LocalDate productionDate,
+        Integer shelfLifeDays,
+        String manufacturer,
+        LocalDate expiryDate
 ) {
 }

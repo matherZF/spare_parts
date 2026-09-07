@@ -60,6 +60,34 @@
             </div>
           </div>
 
+          <el-divider style="margin: 14px 0" />
+
+          <div class="batch-block" v-if="detail.itemKey || detail.productionDate || detail.manufacturer">
+            <div class="label-muted" style="margin-bottom: 8px">批次信息</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="label-muted">批次号</div>
+                <div class="value"><b>{{ detail.itemKey || '-' }}</b></div>
+              </div>
+              <div class="info-item">
+                <div class="label-muted">生产日期</div>
+                <div class="value">{{ detail.productionDate || '-' }}</div>
+              </div>
+              <div class="info-item">
+                <div class="label-muted">保质期(天)</div>
+                <div class="value">{{ detail.shelfLifeDays || '-' }}</div>
+              </div>
+              <div class="info-item">
+                <div class="label-muted">到期日</div>
+                <div class="value">{{ detail.expiryDate || '-' }}</div>
+              </div>
+              <div class="info-item">
+                <div class="label-muted">生产厂商</div>
+                <div class="value">{{ detail.manufacturer || '-' }}</div>
+              </div>
+            </div>
+          </div>
+
           <div style="margin-top: 14px">
             <div class="label-muted" style="margin-bottom: 8px">上架进度</div>
             <el-progress

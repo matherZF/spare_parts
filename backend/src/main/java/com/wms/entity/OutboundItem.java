@@ -24,6 +24,11 @@ public class OutboundItem {
     @JoinColumn(name = "location_id")
     private Location location;
 
+    /** 拣货来源批次 */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "batch_id")
+    private Batch batch;
+
     @Column(nullable = false)
     private int requestedQty;
 
@@ -44,6 +49,8 @@ public class OutboundItem {
     public void setProduct(Product product) { this.product = product; }
     public Location getLocation() { return location; }
     public void setLocation(Location location) { this.location = location; }
+    public Batch getBatch() { return batch; }
+    public void setBatch(Batch batch) { this.batch = batch; }
     public int getRequestedQty() { return requestedQty; }
     public void setRequestedQty(int requestedQty) { this.requestedQty = requestedQty; }
     public int getPickedQty() { return pickedQty; }

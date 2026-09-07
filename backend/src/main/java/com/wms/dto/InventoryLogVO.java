@@ -1,22 +1,28 @@
 package com.wms.dto;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
-// 出库明细项视图
-public record OutboundItemVO(
+/**
+ * 库存变动日志列表项
+ */
+public record InventoryLogVO(
         Long id,
         Long productId,
         String sku,
-        String name,
-        int requestedQty,
-        int pickedQty,
+        String productName,
         Long locationId,
         String locationCode,
-        String locationArea,
-        String deviceNo,
-        int availableQty,
+        String changeType,
+        int changeQty,
+        int beforeQty,
+        int afterQty,
+        String refType,
+        String refNo,
+        String operator,
+        String remark,
+        Instant createdAt,
         // 批次信息
-        Long batchId,
         String itemKey,
         LocalDate productionDate,
         Integer shelfLifeDays,

@@ -86,10 +86,25 @@
           <el-table-column prop="area" label="区域" width="100" />
           <el-table-column prop="sku" label="SKU" min-width="120" />
           <el-table-column prop="productName" label="商品名称" min-width="160" />
-          <el-table-column label="数量" width="120" align="center">
+          <el-table-column label="数量" width="100" align="center">
             <template #default="{ row }">
               <b class="qty-num">{{ row.qty || 0 }}</b>
             </template>
+          </el-table-column>
+          <el-table-column label="批次号" min-width="130">
+            <template #default="{ row }">
+              <b v-if="row.itemKey">{{ row.itemKey }}</b>
+              <span v-else style="color:#c0c4cc">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产日期" width="110" align="center">
+            <template #default="{ row }">{{ row.productionDate || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="到期日" width="110" align="center">
+            <template #default="{ row }">{{ row.expiryDate || '-' }}</template>
+          </el-table-column>
+          <el-table-column label="生产厂商" min-width="120" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.manufacturer || '-' }}</template>
           </el-table-column>
           <el-table-column label="更新时间" min-width="170">
             <template #default="{ row }">

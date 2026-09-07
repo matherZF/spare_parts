@@ -2,6 +2,7 @@ package com.wms.service;
 
 import com.wms.dto.InventoryDetailVO;
 import com.wms.dto.InventorySummaryVO;
+import com.wms.entity.Batch;
 import com.wms.entity.Inventory;
 import com.wms.repository.InventoryRepository;
 import org.springframework.stereotype.Service;
@@ -59,16 +60,25 @@ public class InventoryService {
             return ok1 && ok2;
         }).sorted(Comparator.comparing((Inventory a) -> a.getProduct().getSku())
                 .thenComparing(a -> a.getLocation().getCode()))
-                .map(inv -> new InventoryDetailVO(
-                        inv.getId(),
-                        inv.getProduct().getId(),
-                        inv.getProduct().getSku(),
-                        inv.getProduct().getName(),
-                        inv.getLocation().getId(),
-                        inv.getLocation().getCode(),
-                        inv.getLocation().getArea(),
-                        inv.getQty(),
-                        inv.getUpdatedAt()
-                )).collect(Collectors.toList());
+                .map(inv -> {
+                    Batch b = inv.getBatch();
+                    return new InventoryDetailVO(
+                            inv.getId(),
+                            inv.getProduct().getId(),
+                            inv.getProduct().getSku(),
+                            inv.getProduct().getName(),
+                            inv.getLocation().getId(),
+                            inv.getLocation().getCode(),
+                            inv.getLocation().getArea(),
+                            inv.getQty(),
+                            inv.getUpdatedAt(),
+                            b != null ? b.getId() : null,
+                            b != null ? b.getItemKey() : null,
+                            b != null ? b.getProductionDate() : null,
+                            b != null ? b.getShelfLifeDays() : null,
+                            b != null ? b.getManufacturer() : null,
+                            b != null ? b.getExpiryDate() : null
+                    );
+                }).collect(Collectors.toList());
     }
 }

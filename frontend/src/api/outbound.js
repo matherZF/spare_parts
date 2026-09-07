@@ -24,9 +24,21 @@ export function create(payload) {
 }
 
 // 开始拣货：分配库位 + 触发灯光设备
-// 返回: { orderId, orderNo, items: [{ itemId, sku, name, requestedQty, locationId, locationCode, locationArea, deviceNo, availableQty }] }
+// 返回: { orderId, orderNo, items: [{ itemId, sku, name, requestedQty, locationId, locationCode, locationArea, deviceNo, availableQty, batchId, itemKey, productionDate, shelfLifeDays, manufacturer, expiryDate }] }
 export function startPicking(id) {
   return request.post(`/outbound/${id}/start`)
+}
+
+// 查询某商品可用库存（含批次详情），用于人工选库位
+export function availableStock(productId) {
+  return request.get('/outbound/available-stock', { params: { productId } })
+}
+
+// 人工为出库项分配库位+批次
+export function assignLocation(orderId, itemId, locationId, batchId) {
+  const params = { locationId }
+  if (batchId != null) params.batchId = batchId
+  return request.post(`/outbound/${orderId}/items/${itemId}/assign`, null, { params })
 }
 
 // 拣货完成：扣减库存

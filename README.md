@@ -67,6 +67,28 @@
 
 ## 四、启动方式（推荐：后端 jar + 前端 dev）
 
+启动前请在运行环境设置 JWT 密钥（至少 32 字节）；不要把真实密钥写入项目配置：
+
+```bash
+export JWT_SECRET='replace-with-a-random-secret-at-least-32-bytes'
+# 生产环境还应设置：export CORS_ALLOWED_ORIGINS='https://your-frontend.example.com'
+```
+
+Windows PowerShell：`$env:JWT_SECRET='replace-with-a-random-secret-at-least-32-bytes'`。
+
+本地 MySQL 连接变量（未设置时主机、端口、数据库名和用户名分别默认 `localhost`、`3306`、`wms`、`root`；密码必须设置）：
+
+```powershell
+$env:MYSQL_PASSWORD='你的 MySQL root 密码'
+# 可选：$env:MYSQL_HOST='localhost'; $env:MYSQL_PORT='3306'
+# 可选：$env:MYSQL_DATABASE='wms'; $env:MYSQL_USERNAME='root'
+```
+
+powershell 启动
+$env:JWT_SECRET='change-this-to-a-random-secret-at-least-32-bytes'
+$env:MYSQL_PASSWORD='root'
+cd C:\Users\张峰\IdeaProjects\spare_parts\backend
+mvn spring-boot:run
 ### 方式 1：开发联调（前端热更新 + 后端已打包 jar）
 
 ```bash
