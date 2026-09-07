@@ -2,6 +2,7 @@
 backend/target/
 backend/app.log
 backend/data/
+backend/settings.xml
 
 # Frontend
 frontend/node_modules/
