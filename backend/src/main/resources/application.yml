@@ -40,3 +40,37 @@ app:
   cors:
     # 多个来源用逗号分隔；生产环境请通过 CORS_ALLOWED_ORIGINS 覆盖。
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+# ============================ 积木报表 JimuReport ============================
+jeecg:
+  # 上传方式: local|minio|alioss
+  uploadType: local
+  path:
+    upload: /opt/upload
+  # 积木报表配置
+  jmreport:
+    # 多租户模式（留空=不隔离；created=按创建人；tenant=按租户）
+    saasMode:
+    # 签名密钥（生产环境务必修改）
+    signatureSecret: dd05f1c54d63749eda95f9fa6d49v442a
+    # 平台上线安全配置
+    firewall:
+      # 数据源安全（true 时禁止使用平台数据源）
+      dataSourceSafe: false
+      # 低代码开发模式（dev:可在线设计；prod:关闭在线设计）
+      lowCodeMode: dev
+      # SQL 注入检查级别（strict/basic/none）
+      sqlInjectionLevel: basic
+    # 展示列数 / 行数
+    col: 100
+    row: 200
+    # 自定义 API 接口前缀
+    apiBasePath: http://127.0.0.1:8080
+    # 数据量最大限制（无分页、打印全部场景）
+    max-data-rows: 100000
+    # 自动化导出
+    automate:
+      export:
+        enable-auto-export: true
+        expired: 30
+# ============================ 积木报表 JimuReport ============================

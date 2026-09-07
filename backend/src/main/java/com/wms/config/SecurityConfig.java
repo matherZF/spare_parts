@@ -51,6 +51,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        // 积木报表：前端页面 + 静态资源 + 接口（jmreport / drag / jm / jmureport / freemarker）
+                        .requestMatchers(
+                                "/jmreport/**", "/jmReport/**",
+                                "/drag/**", "/Drag/**",
+                                "/jm/**", "/jmureport/**",
+                                "/freemarker/**"
+                        ).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
