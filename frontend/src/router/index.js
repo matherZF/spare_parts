@@ -73,6 +73,12 @@ const routes = [
     meta: { title: '库存日志', icon: 'Document' }
   },
   {
+    path: '/reports',
+    name: 'ReportCenter',
+    component: () => import('@/pages/ReportCenter.vue'),
+    meta: { title: '报表中心', icon: 'DataLine' }
+  },
+  {
     path: '/users',
     name: 'Users',
     component: () => import('@/pages/Users.vue'),

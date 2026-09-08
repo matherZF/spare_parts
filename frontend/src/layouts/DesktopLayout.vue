@@ -61,7 +61,13 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 5. 系统管理（仅管理员） -->
+        <!-- 5. 报表中心 -->
+        <el-menu-item index="/reports">
+          <el-icon><DataLine /></el-icon>
+          <span>报表中心</span>
+        </el-menu-item>
+
+        <!-- 6. 系统管理（仅管理员） -->
         <el-sub-menu v-if="authStore.isAdmin" index="system">
           <template #title>
             <el-icon><Setting /></el-icon>
