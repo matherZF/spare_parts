@@ -16,6 +16,18 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/jmreport': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/drag': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/jm': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   },
