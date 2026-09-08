@@ -17,7 +17,20 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- 积木报表版本 -->
+        <jimureport.version>2.5.1</jimureport.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>aliyun</id>
+            <url>https://maven.aliyun.com/nexus/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>jeecg</id>
+            <url>https://maven.jeecg.org/nexus/content/repositories/jeecg</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -63,6 +76,48 @@
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- ============================ 积木报表 ============================ -->
+        <!-- 核心报表（SpringBoot3） -->
+        <dependency>
+            <groupId>org.jeecgframework.jimureport</groupId>
+            <artifactId>jimureport-spring-boot3-starter</artifactId>
+            <version>${jimureport.version}</version>
+            <exclusions>
+                <!-- WMS 已用 spring-boot-starter-web，避免重复引入 webmvc -->
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-webmvc</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>druid</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jeecgframework.boot3</groupId>
+                    <artifactId>minidao-spring-boot-starter-jsqlparser-4.9</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- minidao（积木 SQL 解析引擎依赖，独立引入以便排除 druid） -->
+        <dependency>
+            <groupId>org.jeecgframework.boot3</groupId>
+            <artifactId>minidao-spring-boot-starter-jsqlparser-4.9</artifactId>
+            <version>1.10.22</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba</groupId>
+                    <artifactId>druid</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- druid（积木需要的数据源连接池，独立引入） -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.2.24</version>
+        </dependency>
+        <!-- ============================ 积木报表 ============================ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
