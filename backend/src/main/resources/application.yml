@@ -24,7 +24,10 @@ spring:
     maximum-pool-size: 10
   sql:
     init:
-      mode: never
+      # 启动时自动执行积木报表建表脚本（仅在表不存在时创建，不影响已有数据）
+      mode: always
+      schema-locations: classpath:jimureport-schema.sql
+      continue-on-error: true
   jackson:
     time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
